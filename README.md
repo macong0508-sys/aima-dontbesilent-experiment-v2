@@ -1,8 +1,8 @@
-# 天策抖音图文生成器
+# AI马过河抖音图文卡片生成器
 
-一个开源的推文卡片与抖音图文生成工具。选择内容、背景和卡片样式后，可以直接导出 3:4 竖图，并生成配套发布文案。
+AI马过河抖音图文卡片生成器。选择内容、背景和卡片样式后，可以直接导出 3:4 竖图，并生成配套发布文案。
 
-在线体验：[tiance-tweet-card.leobai825.chatgpt.site](https://tiance-tweet-card.leobai825.chatgpt.site)
+在线体验：[AI马过河抖音图文卡片生成器](https://macong0508-sys.github.io/aima-tweet-card-generator/)
 
 ## 功能
 
@@ -27,8 +27,8 @@
 需要先安装 [Node.js 20 或更高版本](https://nodejs.org/)。
 
 ```bash
-git clone https://github.com/Leobai03/tiance-tweet-card-generator.git
-cd tiance-tweet-card-generator
+git clone https://github.com/macong0508-sys/aima-tweet-card-generator.git
+cd aima-tweet-card-generator
 npm install
 npm run dev
 ```
