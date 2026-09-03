@@ -2,7 +2,7 @@
 
 AI马过河抖音图文卡片生成器。选择内容、背景和卡片样式后，可以直接导出 3:4 竖图，并生成配套发布文案。
 
-在线体验：[AI马过河抖音图文卡片生成器](https://macong0508-sys.github.io/aima-tweet-card-generator/)
+在线体验：[AI马过河抖音图文卡片生成器](https://macong0508-sys.github.io/aima-dontbesilent-experiment-v2/)
 
 ## 功能
 
@@ -27,8 +27,8 @@ AI马过河抖音图文卡片生成器。选择内容、背景和卡片样式后
 需要先安装 [Node.js 20 或更高版本](https://nodejs.org/)。
 
 ```bash
-git clone https://github.com/macong0508-sys/aima-tweet-card-generator.git
-cd aima-tweet-card-generator
+git clone https://github.com/macong0508-sys/aima-dontbesilent-experiment-v2.git
+cd aima-dontbesilent-experiment-v2
 npm install
 npm run dev
 ```
@@ -50,7 +50,7 @@ npm run test:sites
 
 ## 自定义成自己的版本
 
-- 修改头像、名字和账号：直接在网页的“检查并下载”区域设置；也可以替换默认头像 `public/assets/tiance-avatar.jpg`
+- 修改头像、名字和账号：直接在网页的“检查并下载”区域设置；也可以替换默认头像 `public/assets/aimaguohe-avatar.jpg`
 - 修改历史内容：替换 `src/tweets.json`
 - 修改基础 AI 素材库：编辑 `src/content-sources.json`
 - 更新飞书精选素材：运行 `node scripts/extract-feishu-materials.mjs <lark-fetch.json>`，结果写入 `src/feishu-content-sources.json`
