@@ -9,6 +9,11 @@ import tweets from "./tweets.json";
 import baseContentSources from "./content-sources.json";
 import feishuContentSources from "./feishu-content-sources.json";
 
+const baseUrl = import.meta.env.BASE_URL || "/";
+function assetPath(path) {
+  return `${baseUrl}${path.replace(/^\/+/, "")}`;
+}
+
 function interleaveContentSources(featured, base) {
   const mixed = [];
   const basePerFeatured = 2;
@@ -21,32 +26,32 @@ function interleaveContentSources(featured, base) {
 
 const contentSources = interleaveContentSources(feishuContentSources, baseContentSources);
 
-const defaultAvatar = "/assets/tiance-avatar.jpg";
+const defaultAvatar = assetPath("assets/aima-avatar.svg");
 const initialTweet = tweets.find((tweet) => tweet.id === "2000941227961733492") || tweets[0];
 const backgrounds = [
-  { id: "city-1", name: "香港海边", tags: "香港 城市 海边 蓝天", src: "/backgrounds/city-1.jpg" },
-  { id: "city-2", name: "城市天际线", tags: "香港 城市 天际线 日落", src: "/backgrounds/city-2.jpg" },
-  { id: "city-3", name: "街头夜景", tags: "城市 街头 夜景 情绪", src: "/backgrounds/city-3.jpg" },
-  { id: "city-4", name: "山海风景", tags: "自然 山 海 风景", src: "/backgrounds/city-4.jpg" },
-  { id: "hk-day", name: "香港港口", tags: "香港 港口 白天 城市", src: "/backgrounds/hk-harbor-day.jpg" },
-  { id: "hk-mountain", name: "山城天际线", tags: "香港 山 城市 天际线", src: "/backgrounds/hk-mountain-city.jpg" },
-  { id: "neon-street", name: "霓虹街头", tags: "城市 夜景 霓虹 街头 情绪", src: "/backgrounds/neon-street.jpg" },
-  { id: "hk-aerial", name: "香港俯瞰夜景", tags: "香港 俯瞰 夜景 灯光", src: "/backgrounds/hk-aerial-night.jpg" },
-  { id: "hk-night", name: "维港夜景", tags: "香港 维多利亚港 夜景 倒影", src: "/backgrounds/hk-harbor-night.jpg" },
-  { id: "tower-night", name: "城市高楼", tags: "城市 高楼 夜景 竖图", src: "/backgrounds/city-tower-night.jpg" },
-  { id: "hk-peak", name: "太平山夜景", tags: "香港 太平山 夜景 天际线", src: "/backgrounds/hk-peak-night.jpg" },
-  { id: "aurora", name: "极光流动", tags: "AI 科技 极光 蓝紫 抽象", src: "/backgrounds/generated-aurora.svg" },
-  { id: "sunset", name: "日落山丘", tags: "日落 山丘 橙色 自然", src: "/backgrounds/generated-sunset.svg" },
-  { id: "ocean", name: "深海微光", tags: "海洋 蓝色 微光 安静", src: "/backgrounds/generated-ocean.svg" },
-  { id: "paper", name: "暖色纸张", tags: "纸张 米色 极简 认知", src: "/backgrounds/generated-paper.svg" },
-  { id: "grid", name: "未来网格", tags: "AI 科技 网格 黑色 未来", src: "/backgrounds/generated-grid.svg" },
-  { id: "forest", name: "雾中森林", tags: "森林 绿色 雾 自然", src: "/backgrounds/generated-forest.svg" },
-  { id: "dawn", name: "城市清晨", tags: "城市 清晨 粉色 天空", src: "/backgrounds/generated-dawn.svg" },
-  { id: "ink", name: "水墨山水", tags: "水墨 山水 黑白 中国风", src: "/backgrounds/generated-ink.svg" },
-  { id: "neon", name: "霓虹渐变", tags: "霓虹 紫色 蓝色 AI 抽象", src: "/backgrounds/generated-neon.svg" },
-  { id: "desert", name: "沙漠光影", tags: "沙漠 金色 光影 自然", src: "/backgrounds/generated-desert.svg" },
-  { id: "cloud", name: "云上蓝天", tags: "蓝天 云朵 清新 自由", src: "/backgrounds/generated-cloud.svg" },
-  { id: "matrix", name: "矩阵光线", tags: "矩阵 光线 绿色 黑色 科技", src: "/backgrounds/generated-matrix.svg" },
+  { id: "city-1", name: "香港海边", tags: "香港 城市 海边 蓝天", src: assetPath("backgrounds/city-1.jpg") },
+  { id: "city-2", name: "城市天际线", tags: "香港 城市 天际线 日落", src: assetPath("backgrounds/city-2.jpg") },
+  { id: "city-3", name: "街头夜景", tags: "城市 街头 夜景 情绪", src: assetPath("backgrounds/city-3.jpg") },
+  { id: "city-4", name: "山海风景", tags: "自然 山 海 风景", src: assetPath("backgrounds/city-4.jpg") },
+  { id: "hk-day", name: "香港港口", tags: "香港 港口 白天 城市", src: assetPath("backgrounds/hk-harbor-day.jpg") },
+  { id: "hk-mountain", name: "山城天际线", tags: "香港 山 城市 天际线", src: assetPath("backgrounds/hk-mountain-city.jpg") },
+  { id: "neon-street", name: "霓虹街头", tags: "城市 夜景 霓虹 街头 情绪", src: assetPath("backgrounds/neon-street.jpg") },
+  { id: "hk-aerial", name: "香港俯瞰夜景", tags: "香港 俯瞰 夜景 灯光", src: assetPath("backgrounds/hk-aerial-night.jpg") },
+  { id: "hk-night", name: "维港夜景", tags: "香港 维多利亚港 夜景 倒影", src: assetPath("backgrounds/hk-harbor-night.jpg") },
+  { id: "tower-night", name: "城市高楼", tags: "城市 高楼 夜景 竖图", src: assetPath("backgrounds/city-tower-night.jpg") },
+  { id: "hk-peak", name: "太平山夜景", tags: "香港 太平山 夜景 天际线", src: assetPath("backgrounds/hk-peak-night.jpg") },
+  { id: "aurora", name: "极光流动", tags: "AI 科技 极光 蓝紫 抽象", src: assetPath("backgrounds/generated-aurora.svg") },
+  { id: "sunset", name: "日落山丘", tags: "日落 山丘 橙色 自然", src: assetPath("backgrounds/generated-sunset.svg") },
+  { id: "ocean", name: "深海微光", tags: "海洋 蓝色 微光 安静", src: assetPath("backgrounds/generated-ocean.svg") },
+  { id: "paper", name: "暖色纸张", tags: "纸张 米色 极简 认知", src: assetPath("backgrounds/generated-paper.svg") },
+  { id: "grid", name: "未来网格", tags: "AI 科技 网格 黑色 未来", src: assetPath("backgrounds/generated-grid.svg") },
+  { id: "forest", name: "雾中森林", tags: "森林 绿色 雾 自然", src: assetPath("backgrounds/generated-forest.svg") },
+  { id: "dawn", name: "城市清晨", tags: "城市 清晨 粉色 天空", src: assetPath("backgrounds/generated-dawn.svg") },
+  { id: "ink", name: "水墨山水", tags: "水墨 山水 黑白 中国风", src: assetPath("backgrounds/generated-ink.svg") },
+  { id: "neon", name: "霓虹渐变", tags: "霓虹 紫色 蓝色 AI 抽象", src: assetPath("backgrounds/generated-neon.svg") },
+  { id: "desert", name: "沙漠光影", tags: "沙漠 金色 光影 自然", src: assetPath("backgrounds/generated-desert.svg") },
+  { id: "cloud", name: "云上蓝天", tags: "蓝天 云朵 清新 自由", src: assetPath("backgrounds/generated-cloud.svg") },
+  { id: "matrix", name: "矩阵光线", tags: "矩阵 光线 绿色 黑色 科技", src: assetPath("backgrounds/generated-matrix.svg") },
 ];
 
 function formatDate(value) {
@@ -166,7 +171,7 @@ function buildPublishCopy(text) {
   if (/(成长|学习|执行|行动|拖延)/.test(clean)) add("#个人成长");
   if (tags.length === 0) add("#认知");
   if (tags.length === 1) add("#个人成长");
-  return `${sentence} ${tags.join(" ")} #天策`;
+  return `${sentence} ${tags.join(" ")} #AI马过河`;
 }
 
 function blobToDataUrl(blob) {
@@ -262,8 +267,8 @@ export function App() {
   const [metricsTick, setMetricsTick] = useState(0);
   const [copyStatus, setCopyStatus] = useState("");
   const [profileAvatar, setProfileAvatar] = useState(defaultAvatar);
-  const [profileName, setProfileName] = useState("天策");
-  const [profileHandle, setProfileHandle] = useState("@Leobai825");
+  const [profileName, setProfileName] = useState("AI马过河");
+  const [profileHandle, setProfileHandle] = useState("AImaGuohe");
   const [publishDate, setPublishDate] = useState(() => new Date().toISOString().slice(0, 10));
   const exportRef = useRef(null);
   const posterExportRef = useRef(null);
@@ -339,7 +344,7 @@ export function App() {
     try {
       const parsed = new URL(value);
       if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("unsupported protocol");
-      setBackground(`/api/image-proxy?url=${encodeURIComponent(parsed.href)}`);
+      setBackground(parsed.href);
     } catch {
       window.alert("请粘贴以 http:// 或 https:// 开头的图片地址。");
     }
@@ -453,7 +458,7 @@ export function App() {
   const finishStep = hasEditor ? (outputMode === "poster" ? "06" : "05") : (outputMode === "poster" ? "05" : "04");
 
   return <main className="app-shell">
-    <header className="topbar"><div className="brand-mark">TC</div><div><p className="eyebrow">TIANCE MATRIX</p><h1>抖音图文生成器</h1></div><div className="privacy-badge"><ShieldCheck weight="fill" /> 选内容 · 选背景 · 直接发</div></header>
+    <header className="topbar"><div className="brand-mark">AI</div><div><p className="eyebrow">AI马过河</p><h1>抖音图文生成器</h1></div><div className="privacy-badge"><ShieldCheck weight="fill" /> 选内容 · 选背景 · 直接发</div></header>
     <div className="app-grid">
       <aside className="control-panel">
         <section className="panel-section mode-section"><div className="section-heading"><span className="step-number">01</span><div><h2>选择内容来源</h2><p>从可信素材、历史原推或自由编辑开始</p></div></div><div className="segmented-control three"><button className={mode === "sources" ? "active" : ""} onClick={() => switchMode("sources")}>AI素材库</button><button className={mode === "history" ? "active" : ""} onClick={() => switchMode("history")}>历史原推</button><button className={mode === "draft" ? "active" : ""} onClick={() => switchMode("draft")}>自由编辑</button></div></section>
