@@ -6,6 +6,7 @@ import {
   Repeat, SealCheck, ShieldCheck, Shuffle, Sparkle, UploadSimple, WarningCircle,
 } from "@phosphor-icons/react";
 import tweets from "./tweets.json";
+import dontbesilentPosts from "./dontbesilent-posts.json";
 import baseContentSources from "./content-sources.json";
 import feishuContentSources from "./feishu-content-sources.json";
 
@@ -25,6 +26,7 @@ function interleaveContentSources(featured, base) {
 }
 
 const contentSources = interleaveContentSources(feishuContentSources, baseContentSources);
+const historyTweets = [...tweets, ...dontbesilentPosts];
 
 const defaultAvatar = assetPath("assets/aimaguohe-avatar.jpg");
 const initialTweet = tweets.find((tweet) => tweet.id === "2000941227961733492") || tweets[0];
@@ -245,6 +247,7 @@ export function App() {
   const [outputMode, setOutputMode] = useState("poster");
   const [orientation, setOrientation] = useState("portrait");
   const [query, setQuery] = useState("");
+  const [historySource, setHistorySource] = useState("全部");
   const [selectedId, setSelectedId] = useState(initialTweet?.id);
   const [draft, setDraft] = useState(() => createDraft(initialTweet));
   const [draftStyle, setDraftStyle] = useState("auto");
@@ -276,7 +279,7 @@ export function App() {
   const dragStateRef = useRef(null);
   const pinchRef = useRef(null);
   const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-  const selected = useMemo(() => tweets.find((tweet) => tweet.id === selectedId) || tweets[0], [selectedId]);
+  const selected = useMemo(() => historyTweets.find((tweet) => tweet.id === selectedId) || historyTweets[0], [selectedId]);
   const selectedSource = useMemo(() => contentSources.find((source) => source.id === selectedSourceId) || contentSources[0], [selectedSourceId]);
   const metricKey = mode === "sources" ? selectedSourceId : selectedId;
   const metrics = useMemo(() => buildDemoMetrics(metricKey, metricsTick), [metricKey, metricsTick]);
@@ -300,11 +303,27 @@ export function App() {
     return contentSources.filter((source) => (sourceCategory === "全部" || source.category === sourceCategory) && (!needle || `${source.title} ${source.insight} ${source.angle} ${source.draft || ""} ${source.action || ""} ${source.sourceName || ""} ${(source.tags || []).join(" ")} ${(source.productFit || []).join(" ")}`.toLowerCase().includes(needle)));
   }, [sourceCategory, sourceQuery]);
   const visibleSourceResults = sourceResults.slice(0, 100);
-  const results = useMemo(() => {
+  const historySourceOptions = [
+    { id: "全部", label: "全部来源" },
+    { id: "aima", label: "AI马过河历史" },
+    { id: "dontbesilent", label: "dontbesilent 推文" },
+  ];
+  const filteredHistoryTweets = useMemo(() => {
+    if (historySource === "aima") return historyTweets.filter((tweet) => tweet.source !== "dontbesilent");
+    if (historySource === "dontbesilent") return historyTweets.filter((tweet) => tweet.source === "dontbesilent");
+    return historyTweets;
+  }, [historySource]);
+  const historySearchPool = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return tweets.slice(0, 12);
-    return tweets.filter((tweet) => `${tweet.text} ${tweet.date}`.toLowerCase().includes(needle)).slice(0, 20);
-  }, [query]);
+    if (!needle) return filteredHistoryTweets;
+    return filteredHistoryTweets.filter((tweet) => [
+      tweet.text,
+      tweet.date,
+      tweet.topic || "",
+      ...(tweet.tags || []),
+    ].join(" ").toLowerCase().includes(needle));
+  }, [query, filteredHistoryTweets]);
+  const results = historySearchPool.slice(0, query.trim() ? 20 : 12);
   const backgroundResults = useMemo(() => {
     const needle = backgroundQuery.trim().toLowerCase();
     return backgrounds.filter((item) => !needle || `${item.name} ${item.tags}`.toLowerCase().includes(needle));
@@ -323,7 +342,12 @@ export function App() {
     const alternatives = pool.filter((source) => source.id !== selectedSourceId);
     selectSource((alternatives.length ? alternatives : pool)[Math.floor(Math.random() * (alternatives.length ? alternatives.length : pool.length))]);
   }
-  function pickRandom() { const pool = tweets.slice(0, Math.min(100, tweets.length)); selectTweet(pool[Math.floor(Math.random() * pool.length)]); }
+  function pickRandom() {
+    const pool = historySearchPool.length ? historySearchPool : filteredHistoryTweets;
+    const alternatives = pool.filter((tweet) => tweet.id !== selectedId);
+    const candidates = alternatives.length ? alternatives : pool;
+    if (candidates.length) selectTweet(candidates[Math.floor(Math.random() * candidates.length)]);
+  }
   function loadUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -470,9 +494,11 @@ export function App() {
           <p className="source-note"><ShieldCheck weight="fill" /> 为保证页面流畅，每次展示前 100 条，搜索和分类会检索完整素材库。数据、个人经历和收入在发布前必须复核，不得虚构。</p>
         </section>}
         {mode !== "sources" && <section className="panel-section archive-section">
-          <div className="section-heading compact"><span className="step-number">02</span><div><h2>搜索 {tweets.length} 条推文</h2><p>搜关键词，点一条就能直接用</p></div></div>
+          <div className="section-heading compact"><span className="step-number">02</span><div><h2>搜索 {historyTweets.length.toLocaleString("zh-CN")} 条推文</h2><p>可按来源筛选，搜关键词后点一条直接使用</p></div></div>
           <div className="search-row"><label className="search-box"><MagnifyingGlass /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="例如：创业、AI、自媒体" /></label><button className="icon-button" onClick={pickRandom}><Shuffle /></button></div>
-          <div className="tweet-list" role="listbox">{results.map((tweet) => <button key={tweet.id} className={`tweet-list-item ${tweet.id === selected.id ? "selected" : ""}`} onClick={() => selectTweet(tweet)}><span className="item-date">{tweet.date}</span><strong>{tweet.text.replace(/\s+/g, " ").slice(0, 58)}</strong><span className="item-stats">{tweet.likes.toLocaleString("zh-CN")} 赞 · {tweet.reposts.toLocaleString("zh-CN")} 转</span></button>)}{results.length === 0 && <div className="empty-state">没有找到，换一个关键词。</div>}</div>
+          <div className="category-pills history-source-pills">{historySourceOptions.map((source) => <button key={source.id} className={historySource === source.id ? "active" : ""} onClick={() => setHistorySource(source.id)}>{source.label}</button>)}</div>
+          <div className="tweet-list" role="listbox">{results.map((tweet) => <button key={tweet.id} className={`tweet-list-item ${tweet.id === selected.id ? "selected" : ""}`} onClick={() => selectTweet(tweet)}><span className="item-date">{tweet.date}</span><strong>{tweet.text.replace(/\s+/g, " ").slice(0, 58)}</strong><span className="item-stats">{tweet.source === "dontbesilent" ? "dontbesilent 开源推文集" : `${tweet.likes.toLocaleString("zh-CN")} 赞 · ${tweet.reposts.toLocaleString("zh-CN")} 转`}</span></button>)}{results.length === 0 && <div className="empty-state">没有找到，换一个关键词。</div>}</div>
+          <p className="source-note"><ShieldCheck weight="fill" /> dontbesilent 开源推文集仅用于非商业实验与个人学习；每条素材保留原帖链接，来源与许可见 README。</p>
         </section>}
         {mode === "sources" && <section className="panel-section editor-section"><div className="section-heading compact"><span className="step-number">03</span><div><h2>调整生成内容</h2><p>保留事实，改成你自己真实说话的方式</p></div></div><textarea value={sourceDraft} onChange={(event) => setSourceDraft(event.target.value)} rows={10} /><div className="editor-actions"><span>{sourceDraft.length} 字</span><button className="secondary-button" onClick={() => setSourceDraft(createSourceDraft(selectedSource))}><Sparkle weight="fill" /> 重新生成</button></div></section>}
         {mode === "draft" && <section className="panel-section editor-section"><div className="section-heading compact"><span className="step-number">03</span><div><h2>选择改写感觉</h2><p>不是换一句话，而是整篇换结构</p></div></div><div className="rewrite-style-pills">{rewriteStyles.map((style) => <button key={style.id} className={draftStyle === style.id ? "active" : ""} onClick={() => chooseDraftStyle(style.id)}>{style.label}</button>)}</div><textarea value={draft} onChange={(event) => setDraft(event.target.value)} rows={10} /><div className="editor-actions"><span>{draft.length} 字</span><button className="secondary-button" onClick={() => rewriteDraft(selected, draftStyle, draftVariant + 1)}><Shuffle weight="fill" /> 换一种写法</button></div><p className="rewrite-note">内容只营造“尽快真正用上AI”的认知，不写收益承诺、诱导购买或无法核实的个人经历。</p></section>}
