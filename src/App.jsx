@@ -26,7 +26,7 @@ function interleaveContentSources(featured, base) {
 
 const contentSources = interleaveContentSources(feishuContentSources, baseContentSources);
 
-const defaultAvatar = assetPath("assets/aima-avatar.svg");
+const defaultAvatar = assetPath("assets/aimaguohe-avatar.jpg");
 const initialTweet = tweets.find((tweet) => tweet.id === "2000941227961733492") || tweets[0];
 const backgrounds = [
   { id: "city-1", name: "香港海边", tags: "香港 城市 海边 蓝天", src: assetPath("backgrounds/city-1.jpg") },
@@ -268,7 +268,7 @@ export function App() {
   const [copyStatus, setCopyStatus] = useState("");
   const [profileAvatar, setProfileAvatar] = useState(defaultAvatar);
   const [profileName, setProfileName] = useState("AI马过河");
-  const [profileHandle, setProfileHandle] = useState("AImaGuohe");
+  const [profileHandle, setProfileHandle] = useState("aimaguohe");
   const [publishDate, setPublishDate] = useState(() => new Date().toISOString().slice(0, 10));
   const exportRef = useRef(null);
   const posterExportRef = useRef(null);
