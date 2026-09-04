@@ -10,7 +10,7 @@ import dontbesilentPosts from "./dontbesilent-posts.json";
 import dontbesilentCaptions from "./dontbesilent-captions.json";
 import baseContentSources from "./content-sources.json";
 import feishuContentSources from "./feishu-content-sources.json";
-import aimaDouyinPilotSources from "./aima-douyin-pilot-sources.json";
+import aimaDouyinMaterials from "./aima-douyin-materials.json";
 
 const baseUrl = import.meta.env.BASE_URL || "/";
 function assetPath(path) {
@@ -27,7 +27,7 @@ function interleaveContentSources(featured, base) {
   return mixed;
 }
 
-const contentSources = [...aimaDouyinPilotSources, ...interleaveContentSources(feishuContentSources, baseContentSources)];
+const contentSources = [...aimaDouyinMaterials, ...interleaveContentSources(feishuContentSources, baseContentSources)];
 
 const tianCeTweets = tweets.map((tweet) => ({ ...tweet, library: "天策原推", topic: tweet.topic || "天策素材" }));
 const dontbesilentTweets = dontbesilentPosts.map((post) => ({
