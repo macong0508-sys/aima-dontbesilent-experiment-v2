@@ -8,7 +8,15 @@
 - 实验分支：`experiment/dontbesilent-integration`
 - 稳定仓库：`macong0508-sys/aima-tweet-card-generator`（不修改）
 - 当前基线页面：`https://macong0508-sys.github.io/aima-dontbesilent-experiment-v2/`
-- 当前基线内容：566 条历史推文、23 张天策背景图。
+- 当前基线内容：2,110 条历史推文（天策 566 + dontbesilent 1,544）、23 张天策背景图。
+
+## 本轮接入结果（2026-09-04）
+
+- 118 张 dontbesilent 背景已原样放入 `public/backgrounds/dontbesilent/`，与上游逐张 SHA-256 核对无差异。
+- 1,544 条 dontbesilent 历史推文已放入 `src/dontbesilent-posts.json`，保留原帖地址、主题、格式和标签；与天策 566 条 ID 无重复。
+- 420 条离线发布文案已放入 `src/dontbesilent-captions.json`，仅作为编辑建议，不自动替代用户核验。
+- 页面继续使用 AI马过河默认身份；历史内容在界面中按来源分组，避免把第三方原文误标为原创。
+- 当前实现仍沿用原有 React/Vite 页面架构，只增加数据源、背景筛选/分页和卡片控制，不覆盖稳定仓库。
 
 ## 参考来源
 
@@ -53,4 +61,5 @@
 - 审计文件写入实验分支；
 - 现有 `main` 分支无变化；
 - 118 张背景、1,544 条推文、420 条文案的数量均已由上游仓库核对；
-- 下一阶段只增加素材和清单，不替换现有页面架构。
+- 页面代码接入和静态数据核验已完成；完整构建由实验分支 GitHub Actions 继续验证。
+- 下一阶段只处理构建结果和实际页面回归，不替换现有页面架构，也不修改稳定仓库。
