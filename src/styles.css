@@ -1765,3 +1765,122 @@ a:focus-visible {
   transform-origin: center top;
   will-change: transform;
 }
+
+
+/* X card parity and export-safe details. */
+.tweet-actions-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.x-logo {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+  fill: currentColor;
+}
+.tweet-body p {
+  margin: 0 0 18px;
+  white-space: pre-wrap;
+}
+.tweet-body p:last-child { margin-bottom: 0; }
+.poster-tweet-card .tweet-body {
+  line-height: 1.66;
+}
+.poster-tweet-card .tweet-body p { margin-bottom: 22px; }
+.phone-tweet-card .tweet-body p { margin-bottom: 8px; }
+.tweet-meta-row {
+  min-height: 25px;
+  padding: 0 4px 11px 54px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #71767b;
+  border-bottom: 1px solid #eff3f4;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.tweet-meta-row strong { color: inherit; font-weight: 700; }
+.theme-dark .tweet-meta-row { border-bottom-color: #2f3336; }
+.tweet-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.phone-tweet-card .tweet-meta-row {
+  min-height: 17px;
+  padding: 0 0 5px;
+  gap: 3px;
+  font-size: 7px;
+}
+.phone-tweet-card .tweet-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+/* Upstream-style numeric +/- card scale controls. */
+.card-size-control {
+  display: grid;
+  gap: 9px;
+}
+.scale-stepper {
+  display: grid;
+  grid-template-columns: 58px minmax(64px, 1fr) 58px auto;
+  gap: 6px;
+  align-items: center;
+}
+.scale-stepper button,
+.scale-stepper input {
+  min-width: 0;
+  min-height: 31px;
+  border: 1px solid #bcb5a9;
+  background: #fffefa;
+  color: var(--ink);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+.scale-stepper button { cursor: pointer; }
+.scale-stepper button:hover,
+.scale-stepper button:focus-visible {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.scale-stepper input { padding: 0 5px; }
+.scale-stepper input::-webkit-inner-spin-button,
+.scale-stepper input::-webkit-outer-spin-button { opacity: 1; }
+
+/* Remote image loading fallback and actionable error state. */
+.background-status {
+  margin: 10px 0 2px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #d9c078;
+  background: #fff7db;
+  color: #6b4d08;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.background-status.error {
+  border-color: #d88b80;
+  background: #fff0ed;
+  color: #8c2f22;
+}
+.background-status button {
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+}
+.is-exporting .card-resize-handle { display: none !important; }
+
+@media (max-width: 540px) {
+  .scale-stepper {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .scale-stepper button:last-child {
+    grid-column: 1 / -1;
+  }
+}

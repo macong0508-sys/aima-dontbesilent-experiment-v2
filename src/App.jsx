@@ -3,7 +3,7 @@ import { toPng } from "html-to-image";
 import {
   ArrowsClockwise, ArrowsOut, BookmarkSimple, ChartBar, Check, ChatCircle, CopySimple,
   DownloadSimple, DotsThree, Heart, ImageSquare, LinkSimple, MagnifyingGlass,
-  Repeat, SealCheck, ShieldCheck, Shuffle, Sparkle, UploadSimple, WarningCircle,
+  Repeat, SealCheck, ShareNetwork, ShieldCheck, Shuffle, Sparkle, UploadSimple, WarningCircle,
 } from "@phosphor-icons/react";
 import tweets from "./tweets.json";
 import dontbesilentPosts from "./dontbesilent-posts.json";
@@ -127,6 +127,12 @@ function getAdaptiveFontSize(text, preferred, poster = false) {
     : length > 1000 ? 13 : length > 720 ? 14 : length > 480 ? 15 : length > 300 ? 16 : length > 180 ? 17 : preferred;
   return Math.min(preferred, limit);
 }
+function clampCardScale(value, fallback = 0.9) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(0.45, Math.min(1.4, parsed));
+}
+
 function cleanSentence(value) {
   return value.replace(/https?:\/\/\S+/g, "").split(/[。！？\n]/).map((item) => item.trim()).find((item) => item.length >= 8 && item.length <= 52);
 }
@@ -200,6 +206,7 @@ function buildDemoMetrics(key, variant = 0) {
     likes: seededNumber(`${key}-${variant}-likes`, 4200, 18000),
     views: seededNumber(`${key}-${variant}-views`, 280000, 4200000),
     bookmarks: seededNumber(`${key}-${variant}-bookmarks`, 520, 5600),
+    shares: seededNumber(`${key}-${variant}-shares`, 80, 920),
   };
 }
 function buildPublishCopy(text) {
@@ -230,6 +237,24 @@ function buildPublishCopy(text) {
   return `${sentence} ${[...new Set(finalTags)].slice(0, 5).join(" ")}`;
 }
 
+function getImageProxyUrl(source) {
+  if (!/^https?:\/\//i.test(String(source || ""))) return null;
+  try {
+    const parsed = new URL(source);
+    if (parsed.hostname === "images.weserv.nl") return null;
+    return \`https://images.weserv.nl/?url=\${encodeURIComponent(parsed.host + parsed.pathname + parsed.search)}\`;
+  } catch {
+    return null;
+  }
+}
+
+function getImageCandidates(source) {
+  const candidates = [source];
+  const proxy = getImageProxyUrl(source);
+  if (proxy && proxy !== source) candidates.push(proxy);
+  return candidates;
+}
+
 function blobToDataUrl(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -241,16 +266,18 @@ function blobToDataUrl(blob) {
 
 async function fetchImageAsDataUrl(source) {
   let lastError;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      const response = await fetch(source, { cache: attempt === 0 ? "force-cache" : "reload" });
-      if (!response.ok) throw new Error(`image ${response.status}`);
-      return await blobToDataUrl(await response.blob());
-    } catch (error) {
-      lastError = error;
+  for (const candidate of getImageCandidates(source)) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const response = await fetch(candidate, { cache: attempt === 0 ? "force-cache" : "reload" });
+        if (!response.ok) throw new Error(\`image \${response.status}\`);
+        return await blobToDataUrl(await response.blob());
+      } catch (error) {
+        lastError = error;
+      }
     }
   }
-  throw lastError;
+  throw lastError || new Error("image fetch failed");
 }
 
 async function createStableExportClone(node) {
@@ -258,6 +285,7 @@ async function createStableExportClone(node) {
   const host = document.createElement("div");
   host.className = "stable-export-host";
   const clone = node.cloneNode(true);
+  clone.classList.add("is-exporting");
   clone.style.width = `${node.offsetWidth}px`;
   if (node.classList.contains("douyin-poster")) clone.style.height = `${node.offsetHeight}px`;
   host.appendChild(clone);
@@ -278,25 +306,48 @@ async function createStableExportClone(node) {
   }
 }
 
+function formatLongDate(value) {
+  const date = new Date(\`\${value}T00:00:00+08:00\`);
+  if (Number.isNaN(date.getTime())) return String(value || "");
+  return \`下午12:46 · \${date.getFullYear()}年\${date.getMonth() + 1}月\${date.getDate()}日\`;
+}
+
+function XLogo() {
+  return <svg className="x-logo" viewBox="0 0 24 24" aria-label="X" role="img">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817-5.964 6.817H1.684l7.73-8.835L1.258 2.25h6.826l4.713 6.231L18.244 2.25Zm-1.161 17.52h1.833L7.084 3.876H5.117L17.083 19.77Z" />
+  </svg>;
+}
+
 function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = "portrait", poster = false, profile, opacity = 1, className = "", resizeControl = null }) {
-  return <article className={`tweet-card theme-${cardTheme} card-${orientation} ${poster ? "poster-tweet-card" : ""} ${className}`.trim()} ref={cardRef} aria-label="推文图片预览" style={{ opacity }}>
+  const bodyParagraphs = String(text || "").split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter(Boolean);
+  const cardClassName = [
+    "tweet-card",
+    \`theme-\${cardTheme}\`,
+    \`card-\${orientation}\`,
+    poster ? "poster-tweet-card" : "",
+    className,
+  ].filter(Boolean).join(" ");
+  return <article className={cardClassName} ref={cardRef} aria-label="推文图片预览" style={{ opacity }}>
     <header className="tweet-header">
-      <img className="tweet-avatar" src={profile.avatar} alt={`${profile.name}头像`} />
+      <img className="tweet-avatar" src={profile.avatar} alt={\`\${profile.name}头像\`} />
       <div className="tweet-identity"><div className="tweet-name-line"><strong>{profile.name}</strong><SealCheck weight="fill" className="verified-icon" /><span>{profile.handle}</span><span>·</span><span>{formatDate(profile.date)}</span></div></div>
-      <div className="tweet-actions-top" aria-hidden="true"><DotsThree size={25} weight="bold" /></div>
+      <div className="tweet-actions-top" aria-hidden="true"><XLogo /><DotsThree size={25} weight="bold" /></div>
     </header>
-    <div className="tweet-body" style={{ fontSize: `${fontSize}px` }}>{text}</div>
+    <div className="tweet-body" style={{ fontSize: \`\${fontSize}px\` }}>
+      {bodyParagraphs.length ? bodyParagraphs.map((paragraph, index) => <p key={\`\${index}-\${paragraph.slice(0, 12)}\`}>{paragraph}</p>) : <p>暂无正文</p>}
+    </div>
+    <div className="tweet-meta-row"><span>{formatLongDate(profile.date)}</span><span>·</span><strong>{formatMetric(metrics.views)} 查看</strong></div>
     <footer className="tweet-metrics">
       <span><ChatCircle /><em>{formatMetric(metrics.replies)}</em></span>
       <span><Repeat /><em>{formatMetric(metrics.reposts)}</em></span>
       <span className="liked"><Heart weight="fill" /><em>{formatMetric(metrics.likes)}</em></span>
       <span><ChartBar /><em>{formatMetric(metrics.views)}</em></span>
       <span><BookmarkSimple /><em>{formatMetric(metrics.bookmarks)}</em></span>
+      <span><ShareNetwork /><em>{formatMetric(metrics.shares)}</em></span>
     </footer>
     {resizeControl}
   </article>;
 }
-
 
 function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background, overlay, cardScale = 1, cardPosition = { x: 0, y: 0 }, cardRotation = 0 }) {
   const normalizedText = String(text || "").trim();
@@ -318,7 +369,7 @@ function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background,
         <div className="phone-frame">
           <div className="phone-speaker" />
           <div className="phone-screen">
-            <img className="phone-background" src={background} alt="" />
+            <img className="phone-background" src={background} crossOrigin="anonymous" onLoad={handleBackgroundLoad} onError={handleBackgroundError} alt="" />
             <div className="phone-background-dim" style={{ background: "rgba(0,0,0," + (overlay / 100) + ")" }} />
             <div className="phone-top-tabs"><span>关注</span><strong>推荐</strong><span>朋友</span></div>
             <div className="phone-card-anchor">
@@ -378,6 +429,9 @@ export function App() {
   const [backgroundLibrary, setBackgroundLibrary] = useState("全部");
   const [backgroundPage, setBackgroundPage] = useState(1);
   const [backgroundUrl, setBackgroundUrl] = useState("");
+  const [backgroundLoadState, setBackgroundLoadState] = useState("ready");
+  const [backgroundError, setBackgroundError] = useState("");
+  const [backgroundProxyTried, setBackgroundProxyTried] = useState(false);
   const [overlay, setOverlay] = useState(18);
   const [cardScale, setCardScale] = useState(0.9);
   const [cardOpacity, setCardOpacity] = useState(1);
@@ -456,17 +510,48 @@ export function App() {
     const pool = historyResults.length ? historyResults : allTweets;
     selectTweet(pool[Math.floor(Math.random() * pool.length)]);
   }
+  function chooseBackground(source) {
+    if (!source) return;
+    setBackground(source);
+    setBackgroundLoadState("loading");
+    setBackgroundError("");
+    setBackgroundProxyTried(false);
+  }
+  function handleBackgroundLoad() {
+    setBackgroundLoadState("ready");
+    setBackgroundError(backgroundProxyTried ? "已通过图片代理加载，可继续导出。" : "");
+  }
+  function handleBackgroundError() {
+    const proxy = !backgroundProxyTried ? getImageProxyUrl(background) : null;
+    if (proxy) {
+      setBackgroundProxyTried(true);
+      setBackgroundLoadState("proxy");
+      setBackgroundError("原图无法直接加载，正在尝试图片代理…");
+      setBackground(proxy);
+      return;
+    }
+    setBackgroundLoadState("error");
+    setBackgroundError("图片加载失败。请换一张内置背景，或先保存图片后上传。");
+  }
+  function retryBackground() {
+    const typedRemote = backgroundUrl.trim();
+    if (/^https?:\/\//i.test(typedRemote)) {
+      chooseBackground(typedRemote);
+      return;
+    }
+    chooseBackground(backgrounds[0]?.src);
+  }
   function pickRandomBackground() {
     const pool = backgroundResults.length ? backgroundResults : backgrounds;
     const alternatives = pool.filter((item) => item.src !== background);
     const next = (alternatives.length ? alternatives : pool)[Math.floor(Math.random() * (alternatives.length ? alternatives.length : pool.length))];
-    if (next) setBackground(next.src);
+    if (next) chooseBackground(next.src);
   }
   function loadUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setBackground(String(reader.result));
+    reader.onload = () => chooseBackground(String(reader.result));
     reader.readAsDataURL(file);
   }
   function loadProfileAvatar(event) {
@@ -482,7 +567,7 @@ export function App() {
     try {
       const parsed = new URL(value);
       if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("unsupported protocol");
-      setBackground(parsed.href);
+      chooseBackground(parsed.href);
     } catch {
       window.alert("请粘贴以 http:// 或 https:// 开头的图片地址。");
     }
@@ -562,7 +647,7 @@ export function App() {
     const canvasScale = rect?.width ? 720 / rect.width : 1;
     const delta = ((event.clientX - resize.startX) + (event.clientY - resize.startY)) / 2;
     const nextScale = resize.origin + (delta * canvasScale) / 260;
-    setCardScale(Math.max(0.45, Math.min(1.4, nextScale)));
+    setCardScale(clampCardScale(nextScale));
   }
   function stopResizing(event) {
     const resize = resizeStateRef.current;
@@ -587,7 +672,7 @@ export function App() {
     const dx = e.touches[0].clientX - e.touches[1].clientX;
     const dy = e.touches[0].clientY - e.touches[1].clientY;
     const ratio = Math.hypot(dx, dy) / pinchRef.current.dist;
-    setCardScale(Math.max(0.45, Math.min(1.4, pinchRef.current.scale * ratio)));
+    setCardScale(clampCardScale(pinchRef.current.scale * ratio));
   }
   function handleTouchEnd() { pinchRef.current = null; }
   async function deliverImage(dataUrl, filename) {
@@ -621,13 +706,19 @@ export function App() {
       const stable = await createStableExportClone(node);
       cleanup = stable.cleanup;
       const isDouyinPoster = stable.clone.classList.contains("douyin-poster");
-      const dataUrl = await toPng(stable.clone, { cacheBust: false, pixelRatio: isDouyinPoster ? 1.5 : 2, backgroundColor });
+      const dataUrl = await toPng(stable.clone, {
+        cacheBust: false,
+        pixelRatio: isDouyinPoster ? 1 : 2,
+        canvasWidth: isDouyinPoster ? 1080 : undefined,
+        canvasHeight: isDouyinPoster ? 1440 : undefined,
+        backgroundColor,
+      });
       await deliverImage(dataUrl, filename);
       setExported(true);
       window.setTimeout(() => setExported(false), 1800);
     } catch (error) {
       if (error?.name === "AbortError") return;
-      window.alert("这张网络图片禁止跨站导出。请先保存图片，再用“上传自己的背景”导入。");
+      window.alert("图片导出失败。远程图片可能拒绝跨站读取；系统已自动尝试图片代理。仍失败时，请下载后用“上传自己的背景”导入。");
     } finally {
       cleanup();
       setExporting(false);
@@ -678,15 +769,24 @@ export function App() {
           <div className="background-toolbar"><label className="search-box background-search"><MagnifyingGlass /><input value={backgroundQuery} onChange={(event) => setBackgroundQuery(event.target.value)} placeholder="搜：城市、旅行、夜景、山海" /></label><button className="icon-button" onClick={pickRandomBackground} title="随机切换背景" aria-label="随机切换背景"><Shuffle /></button></div>
           <div className="category-pills background-library-pills">{backgroundLibraries.map((library) => <button key={library} className={backgroundLibrary === library ? "active" : ""} onClick={() => setBackgroundLibrary(library)}>{library}<em>{library === "全部" ? backgrounds.length : backgrounds.filter((item) => item.library === library).length}</em></button>)}</div>
           <p className="background-count">当前显示 {visibleBackgroundResults.length} / {backgroundResults.length} 张 · 天策图库与 dontbesilent 图库已分开标记</p>
-          <div className="background-grid">{visibleBackgroundResults.map((item) => <button key={item.id} className={background === item.src ? "active" : ""} onClick={() => setBackground(item.src)}><img src={item.src} loading="eager" decoding="async" alt={item.name} /><span>{item.name}</span><small>{item.library}</small></button>)}</div>
+          <div className="background-grid">{visibleBackgroundResults.map((item) => <button key={item.id} className={background === item.src ? "active" : ""} onClick={() => chooseBackground(item.src)}><img src={item.src} loading="eager" decoding="async" alt={item.name} /><span>{item.name}</span><small>{item.library}</small></button>)}</div>
           {visibleBackgroundResults.length < backgroundResults.length && <button className="load-more-backgrounds" onClick={() => setBackgroundPage((page) => page + 1)}>查看更多背景（还剩 {backgroundResults.length - visibleBackgroundResults.length} 张）</button>}
-          <div className="background-actions"><label className="upload-button"><UploadSimple /> 上传自己的背景<input type="file" accept="image/*" onChange={loadUpload} /></label><div className="url-row"><input value={backgroundUrl} onChange={(event) => setBackgroundUrl(event.target.value)} placeholder="或粘贴网上的图片地址" /><button onClick={applyBackgroundUrl}>使用</button></div></div>
+          <div className="background-actions"><label className="upload-button"><UploadSimple /> 上传自己的背景<input type="file" accept="image/*" onChange={loadUpload} /></label><div className="url-row"><input value={backgroundUrl} onChange={(event) => setBackgroundUrl(event.target.value)} placeholder="或粘贴网上的图片地址" /><button type="button" onClick={applyBackgroundUrl}>使用</button></div></div>
+          {backgroundError && <div className={"background-status " + (backgroundLoadState === "error" ? "error" : "notice")} role={backgroundLoadState === "error" ? "alert" : "status"}><span>{backgroundError}</span><button type="button" onClick={retryBackground}>重新加载</button></div>}
           <label className="range-label"><span>背景压暗 <b>{overlay}%</b></span><input type="range" min="0" max="55" value={overlay} onChange={(event) => setOverlay(Number(event.target.value))} /></label>
           <div className="placement-controls">
-            <label className="range-label"><span>卡片大小 <b>{Math.round(cardScale * 100)}%</b></span><input type="range" min="45" max="140" value={Math.round(cardScale * 100)} onChange={(event) => setCardScale(Number(event.target.value) / 100)} /></label>
+            <div className="card-size-control">
+              <label className="range-label"><span>卡片大小 <b>{Math.round(cardScale * 100)}%</b></span><input type="range" min="45" max="140" value={Math.round(cardScale * 100)} onChange={(event) => setCardScale(clampCardScale(Number(event.target.value) / 100))} /></label>
+              <div className="scale-stepper" role="group" aria-label="卡片大小快捷调整">
+                <button type="button" onClick={() => setCardScale((value) => clampCardScale(value - 0.05))} aria-label="缩小卡片 5%">−5%</button>
+                <input type="number" min="45" max="140" step="1" value={Math.round(cardScale * 100)} onChange={(event) => setCardScale(clampCardScale(Number(event.target.value) / 100))} aria-label="卡片大小百分比" />
+                <button type="button" onClick={() => setCardScale((value) => clampCardScale(value + 0.05))} aria-label="放大卡片 5%">+5%</button>
+                <button type="button" onClick={fitCardToCanvas}>适配画布</button>
+              </div>
+            </div>
             <label className="range-label"><span>卡片透明度 <b>{Math.round(cardOpacity * 100)}%</b></span><input type="range" min="45" max="100" value={Math.round(cardOpacity * 100)} onChange={(event) => setCardOpacity(Number(event.target.value) / 100)} /></label>
             <label className="range-label"><span>卡片旋转 <b>{cardRotation}°</b></span><input type="range" min="-180" max="180" value={cardRotation} onChange={(event) => setCardRotation(Number(event.target.value))} /></label>
-            <div className="drag-help"><span>拖动卡片调整位置 · 双指缩放</span><div><button onClick={fitCardToCanvas}>适配画布</button><button onClick={resetCardPlacement}>居中重置</button></div></div>
+            <div className="drag-help"><span>拖动卡片调整位置 · 双指缩放</span><div><button type="button" onClick={resetCardPlacement}>居中重置</button></div></div>
           </div>
         </section>}
         <section className="panel-section visual-section"><div className="section-heading compact"><span className="step-number">{finishStep}</span><div><h2>检查并下载</h2><p>右侧看到的就是最终图片</p></div></div><div className="profile-editor"><div className="profile-avatar-editor"><img src={profileAvatar} alt="当前头像" /><label><UploadSimple /> 自定义头像<input type="file" accept="image/*" onChange={loadProfileAvatar} /></label></div><div className="profile-fields"><label><span>显示名称</span><input value={profileName} maxLength={30} onChange={(event) => setProfileName(event.target.value)} /></label><label><span>用户名</span><input value={profileHandle} maxLength={32} onChange={(event) => setProfileHandle(event.target.value)} placeholder="@username" /></label><label><span>发布日期</span><input type="date" value={publishDate} onChange={(event) => setPublishDate(event.target.value)} /></label></div></div><div className="card-theme-control"><span>卡片背景</span><div className="card-theme-picker" role="group" aria-label="选择卡片背景"><button type="button" className={cardTheme === "light" ? "active" : ""} onClick={() => setCardTheme("light")}><i className="theme-swatch light" />白色</button><button type="button" className={cardTheme === "dark" ? "active" : ""} onClick={() => setCardTheme("dark")}><i className="theme-swatch dark" />黑色</button></div></div><label className="range-label"><span>正文字号 <b>{fontSize}px</b>{adaptiveCardFontSize < fontSize && <em>长文自动适配为 {adaptiveCardFontSize}px</em>}</span><input type="range" min="13" max="22" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))} /></label><button className="direct-export-button" onClick={exportDirectCard} disabled={exporting}><BookmarkSimple weight="fill" /><span><strong>{isMobile ? "保存纯推文卡片到相册" : "直接导出纯推文卡片"}</strong><small>没有海报背景，尺寸随正文自动增高</small></span></button>{outputMode === "poster" && activeText.length > 700 && <div className="length-warning"><WarningCircle weight="fill" /><span>这条内容很长，系统已经自动缩小卡片。纯卡片导出不会截断，抖音竖图建议适当精简。</span></div>}</section>
@@ -699,7 +799,7 @@ export function App() {
       </aside>
       <section className="preview-panel">
         <div className="preview-toolbar"><div><span className={`status-dot ${mode}`} /><strong>{outputMode === "poster" ? `竖版 3:4 背景 · ${orientation === "portrait" ? "竖版" : "横版"}卡片` : `${orientation === "portrait" ? "竖版" : "横版"}纯推文卡片预览`}</strong></div><div className="toolbar-actions">{mode === "history" && <a href={selected.url} target="_blank" rel="noreferrer"><LinkSimple /> 查看原推</a>}{mode === "sources" && <a href={selectedSource.sourceUrl} target="_blank" rel="noreferrer"><LinkSimple /> 查看来源</a>}<button type="button" className="ghost-button" onClick={() => setMetricsTick((t) => t + 1)}><ArrowsClockwise /> 换一组数据</button></div></div>
-        <div className={`preview-stage ${outputMode} ${orientation}`}>{outputMode === "poster" ? <div className="douyin-poster" ref={exportRef}><img className="poster-background" src={background} crossOrigin="anonymous" alt="" /><div className="poster-overlay" style={{ background: `rgba(0,0,0,${overlay / 100})` }} /><div className={`poster-card-wrap wrap-${orientation}`} style={{ left: `calc(50% + ${cardPosition.x}px)`, top: `calc(50% + ${cardPosition.y}px)`, transform: `translate(-50%, -50%) rotate(${cardRotation}deg) scale(${cardScale * posterFitScale})` }} onPointerDown={startDragging} onPointerMove={dragCard} onPointerUp={stopDragging} onPointerCancel={stopDragging} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}><TweetCard text={activeText} fontSize={adaptivePosterFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} poster resizeControl={<button type="button" className="card-resize-handle" title="拖动调整卡片大小" aria-label="拖动调整卡片大小" onPointerDown={startResizing} onPointerMove={resizeCard} onPointerUp={stopResizing} onPointerCancel={stopResizing}><ArrowsOut size={14} weight="bold" /></button>} /></div></div> : <TweetCard cardRef={exportRef} text={activeText} fontSize={adaptiveCardFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} />}</div>
+        <div className={`preview-stage ${outputMode} ${orientation}`}>{outputMode === "poster" ? <div className="douyin-poster" ref={exportRef}><img className="poster-background" src={background} crossOrigin="anonymous" onLoad={handleBackgroundLoad} onError={handleBackgroundError} alt="" /><div className="poster-overlay" style={{ background: `rgba(0,0,0,${overlay / 100})` }} /><div className={`poster-card-wrap wrap-${orientation}`} style={{ left: `calc(50% + ${cardPosition.x}px)`, top: `calc(50% + ${cardPosition.y}px)`, transform: `translate(-50%, -50%) rotate(${cardRotation}deg) scale(${cardScale * posterFitScale})` }} onPointerDown={startDragging} onPointerMove={dragCard} onPointerUp={stopDragging} onPointerCancel={stopDragging} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}><TweetCard text={activeText} fontSize={adaptivePosterFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} poster resizeControl={<button type="button" className="card-resize-handle" title="拖动调整卡片大小" aria-label="拖动调整卡片大小" onPointerDown={startResizing} onPointerMove={resizeCard} onPointerUp={stopResizing} onPointerCancel={stopResizing}><ArrowsOut size={14} weight="bold" /></button>} /></div></div> : <TweetCard cardRef={exportRef} text={activeText} fontSize={adaptiveCardFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} />}</div>
         {outputMode === "poster" && (
         <PhonePreview
           text={activeText}
