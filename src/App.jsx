@@ -278,8 +278,8 @@ async function createStableExportClone(node) {
   }
 }
 
-function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = "portrait", poster = false, profile, opacity = 1 }) {
-  return <article className={`tweet-card theme-${cardTheme} card-${orientation} ${poster ? "poster-tweet-card" : ""}`} ref={cardRef} aria-label="推文图片预览" style={{ opacity }}>
+function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = "portrait", poster = false, profile, opacity = 1, className = "" }) {
+  return <article className={`tweet-card theme-${cardTheme} card-${orientation} ${poster ? "poster-tweet-card" : ""} ${className}`.trim()} ref={cardRef} aria-label="推文图片预览" style={{ opacity }}>
     <header className="tweet-header">
       <img className="tweet-avatar" src={profile.avatar} alt={`${profile.name}头像`} />
       <div className="tweet-identity"><div className="tweet-name-line"><strong>{profile.name}</strong><SealCheck weight="fill" className="verified-icon" /><span>{profile.handle}</span><span>·</span><span>{formatDate(profile.date)}</span></div></div>
@@ -294,6 +294,55 @@ function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = 
       <span><BookmarkSimple /><em>{formatMetric(metrics.bookmarks)}</em></span>
     </footer>
   </article>;
+}
+
+
+function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background, overlay }) {
+  const normalizedText = String(text || "").trim();
+  const feedText = normalizedText.length > 460 ? normalizedText.slice(0, 460).trim() + "…" : normalizedText;
+  const compactFontSize = Math.max(11, Math.min(16, fontSize - (normalizedText.length > 280 ? 2 : 0)));
+  const captionText = feedText.replace(/\s+/g, " ").slice(0, 88);
+  return (
+    <section className="phone-preview" aria-label="手机发布效果预览">
+      <div className="phone-preview-heading">
+        <div><span className="phone-live-dot" /><strong>手机发布效果</strong></div>
+        <span>模拟抖音 9:16 信息流</span>
+      </div>
+      <div className="phone-preview-stage">
+        <div className="phone-frame">
+          <div className="phone-speaker" />
+          <div className="phone-screen">
+            <img className="phone-background" src={background} alt="" />
+            <div className="phone-background-dim" style={{ background: "rgba(0,0,0," + (overlay / 100) + ")" }} />
+            <div className="phone-top-tabs"><span>关注</span><strong>推荐</strong><span>朋友</span></div>
+            <div className="phone-card-anchor">
+              <TweetCard
+                text={feedText}
+                fontSize={compactFontSize}
+                metrics={metrics}
+                cardTheme={cardTheme}
+                profile={profile}
+                className="phone-tweet-card"
+              />
+            </div>
+            <div className="phone-feed-author"><strong>{profile.name}</strong><span>{profile.handle}</span></div>
+            <div className="phone-feed-caption">{captionText}{feedText.length > 88 ? "…" : ""}</div>
+            <div className="phone-feed-audio">♪ 原声 · AI马过河</div>
+            <div className="phone-action-rail" aria-hidden="true">
+              <span><Heart weight="fill" /><b>{formatMetric(metrics.likes)}</b></span>
+              <span><ChatCircle weight="fill" /><b>{formatMetric(metrics.replies)}</b></span>
+              <span><Repeat weight="bold" /><b>{formatMetric(metrics.reposts)}</b></span>
+              <span><BookmarkSimple weight="fill" /><b>{formatMetric(metrics.bookmarks)}</b></span>
+            </div>
+            <nav className="phone-bottom-nav" aria-label="模拟抖音底部导航">
+              <span>首页</span><span>朋友</span><b>＋</b><span>消息</span><span>我</span>
+            </nav>
+          </div>
+        </div>
+      </div>
+      <p className="phone-preview-note">用于判断手机端字号与信息密度，不参与图片下载。</p>
+    </section>
+  );
 }
 
 export function App() {
@@ -608,6 +657,17 @@ export function App() {
       <section className="preview-panel">
         <div className="preview-toolbar"><div><span className={`status-dot ${mode}`} /><strong>{outputMode === "poster" ? `竖版 3:4 背景 · ${orientation === "portrait" ? "竖版" : "横版"}卡片` : `${orientation === "portrait" ? "竖版" : "横版"}纯推文卡片预览`}</strong></div><div className="toolbar-actions">{mode === "history" && <a href={selected.url} target="_blank" rel="noreferrer"><LinkSimple /> 查看原推</a>}{mode === "sources" && <a href={selectedSource.sourceUrl} target="_blank" rel="noreferrer"><LinkSimple /> 查看来源</a>}<button type="button" className="ghost-button" onClick={() => setMetricsTick((t) => t + 1)}><ArrowsClockwise /> 换一组数据</button></div></div>
         <div className={`preview-stage ${outputMode} ${orientation}`}>{outputMode === "poster" ? <div className="douyin-poster" ref={exportRef}><img className="poster-background" src={background} crossOrigin="anonymous" alt="" /><div className="poster-overlay" style={{ background: `rgba(0,0,0,${overlay / 100})` }} /><div className={`poster-card-wrap wrap-${orientation}`} style={{ left: `calc(50% + ${cardPosition.x}px)`, top: `calc(50% + ${cardPosition.y}px)`, transform: `translate(-50%, -50%) rotate(${cardRotation}deg) scale(${cardScale * posterFitScale})` }} onPointerDown={startDragging} onPointerMove={dragCard} onPointerUp={stopDragging} onPointerCancel={stopDragging} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}><TweetCard text={activeText} fontSize={adaptivePosterFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} poster /></div></div> : <TweetCard cardRef={exportRef} text={activeText} fontSize={adaptiveCardFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} />}</div>
+        {outputMode === "poster" && (
+        <PhonePreview
+          text={activeText}
+          fontSize={adaptivePosterFontSize}
+          metrics={metrics}
+          cardTheme={cardTheme}
+          profile={profile}
+          background={background}
+          overlay={overlay}
+        />
+        )}
         <div className="export-bar"><div className="export-note"><Check weight="bold" /><span>{isMobile ? "生成后在系统面板选择“存储图像”，即可保存到相册。" : outputMode === "poster" ? "下载图片，再复制发布文案，就能直接发抖音。" : "下载纯推文卡片 PNG。"}</span></div><div className="export-actions"><button className="copy-export-button" onClick={copyDescription}><CopySimple weight="bold" /> 复制发布文案</button><button className="download-button" onClick={downloadImage} disabled={exporting}>{exported ? <Check weight="bold" /> : <DownloadSimple weight="bold" />}{exporting ? "正在生成…" : exported ? (isMobile ? "已生成" : "已下载") : (isMobile ? "保存到相册" : "一键下载成品")}</button></div></div>
       </section>
     </div>
