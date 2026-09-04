@@ -1632,3 +1632,110 @@ a:focus-visible {
     padding-left: 12px;
   }
 }
+
+
+/* Poster fit, typography, and resize affordance. */
+.poster-tweet-card .tweet-body {
+  line-height: 1.74;
+  letter-spacing: 0.012em;
+}
+
+.poster-tweet-card .card-resize-handle {
+  position: absolute;
+  right: -14px;
+  bottom: -14px;
+  z-index: 4;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #d4d9de;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  color: #0f1419;
+  background: #fff;
+  box-shadow: 0 2px 9px rgba(15, 20, 25, 0.24);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.poster-tweet-card .card-resize-handle:hover,
+.poster-tweet-card .card-resize-handle:focus-visible {
+  color: #fff;
+  border-color: #0f1419;
+  background: #0f1419;
+}
+
+.poster-tweet-card .card-resize-handle::after {
+  content: "拖动调整卡片大小";
+  position: absolute;
+  right: calc(100% + 8px);
+  bottom: 0;
+  z-index: 5;
+  padding: 6px 8px;
+  border-radius: 4px;
+  color: #fff;
+  background: rgba(15, 20, 25, 0.92);
+  box-shadow: 0 3px 12px rgba(15, 20, 25, 0.2);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(2px);
+  transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+}
+
+.poster-tweet-card .card-resize-handle:hover::after,
+.poster-tweet-card .card-resize-handle:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.preview-stage.poster {
+  overflow-x: hidden;
+}
+
+.preview-stage.poster .douyin-poster {
+  width: min(720px, 100%);
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  aspect-ratio: 3 / 4;
+}
+
+.preview-stage.poster .poster-card-wrap {
+  max-width: calc(100% - 24px);
+}
+
+.preview-stage.poster .poster-card-wrap.wrap-portrait {
+  width: min(500px, calc(100% - 72px));
+}
+
+.preview-stage.poster .poster-card-wrap.wrap-landscape {
+  width: min(640px, calc(100% - 36px));
+}
+
+@media (max-width: 860px) {
+  .preview-stage.poster {
+    padding: 20px 10px;
+    overflow-x: hidden;
+  }
+
+  .preview-stage.poster .poster-card-wrap.wrap-portrait {
+    width: min(500px, calc(100% - 64px));
+  }
+
+  .preview-stage.poster .poster-card-wrap.wrap-landscape {
+    width: min(640px, calc(100% - 28px));
+  }
+}
+
+@media (max-width: 620px) {
+  .poster-tweet-card .card-resize-handle::after {
+    display: none;
+  }
+}
