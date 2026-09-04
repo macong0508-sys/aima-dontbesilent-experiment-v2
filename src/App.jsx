@@ -300,7 +300,7 @@ function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = 
 function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background, overlay }) {
   const normalizedText = String(text || "").trim();
   const feedText = normalizedText.length > 460 ? normalizedText.slice(0, 460).trim() + "…" : normalizedText;
-  const compactFontSize = Math.max(11, Math.min(16, fontSize - (normalizedText.length > 280 ? 2 : 0)));
+  const compactFontSize = Math.max(10, Math.min(14, fontSize - (normalizedText.length > 280 ? 2 : 0)));
   const captionText = feedText.replace(/\s+/g, " ").slice(0, 88);
   return (
     <section className="phone-preview" aria-label="手机发布效果预览">
