@@ -349,7 +349,7 @@ function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = 
   </article>;
 }
 
-function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background, overlay, cardScale = 1, cardPosition = { x: 0, y: 0 }, cardRotation = 0 }) {
+function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background, overlay, cardScale = 1, cardPosition = { x: 0, y: 0 }, cardRotation = 0, onBackgroundLoad, onBackgroundError }) {
   const normalizedText = String(text || "").trim();
   const feedText = normalizedText.length > 460 ? normalizedText.slice(0, 460).trim() + "…" : normalizedText;
   const compactFontSize = Math.max(10, Math.min(14, fontSize - (normalizedText.length > 280 ? 2 : 0)));
@@ -369,7 +369,7 @@ function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background,
         <div className="phone-frame">
           <div className="phone-speaker" />
           <div className="phone-screen">
-            <img className="phone-background" src={background} crossOrigin="anonymous" onLoad={handleBackgroundLoad} onError={handleBackgroundError} alt="" />
+            <img className="phone-background" src={background} crossOrigin="anonymous" onLoad={onBackgroundLoad} onError={onBackgroundError} alt="" />
             <div className="phone-background-dim" style={{ background: "rgba(0,0,0," + (overlay / 100) + ")" }} />
             <div className="phone-top-tabs"><span>关注</span><strong>推荐</strong><span>朋友</span></div>
             <div className="phone-card-anchor">
@@ -812,6 +812,8 @@ export function App() {
           cardScale={cardScale * posterFitScale}
           cardPosition={cardPosition}
           cardRotation={cardRotation}
+          onBackgroundLoad={handleBackgroundLoad}
+          onBackgroundError={handleBackgroundError}
         />
         )}
         <div className="export-bar"><div className="export-note"><Check weight="bold" /><span>{isMobile ? "生成后在系统面板选择“存储图像”，即可保存到相册。" : outputMode === "poster" ? "下载图片，再复制发布文案，就能直接发抖音。" : "下载纯推文卡片 PNG。"}</span></div><div className="export-actions"><button className="copy-export-button" onClick={copyDescription}><CopySimple weight="bold" /> 复制发布文案</button><button className="download-button" onClick={downloadImage} disabled={exporting}>{exported ? <Check weight="bold" /> : <DownloadSimple weight="bold" />}{exporting ? "正在生成…" : exported ? (isMobile ? "已生成" : "已下载") : (isMobile ? "保存到相册" : "一键下载成品")}</button></div></div>
