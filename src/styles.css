@@ -1242,3 +1242,393 @@ a:focus-visible {
     width: 100%;
   }
 }
+
+
+/* Desktop scroll behavior follows the upstream natural-height grid + sticky preview pattern. */
+@media (min-width: 861px) {
+  .app-grid {
+    align-items: start;
+  }
+
+  .control-panel {
+    align-self: start;
+    max-height: none;
+    overflow: visible;
+    scrollbar-width: auto;
+  }
+
+  .preview-panel {
+    position: sticky;
+    top: 14px;
+    align-self: start;
+    display: block;
+    height: max-content;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .preview-stage {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}
+
+/* Non-exporting Douyin 9:16 feed simulation. */
+.phone-preview {
+  margin-top: 16px;
+  border-top: 1px solid var(--ink);
+  background: #f7f4ee;
+}
+
+.phone-preview-heading {
+  min-height: 52px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.phone-preview-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phone-preview-heading strong {
+  font-size: 13px;
+}
+
+.phone-preview-heading > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.phone-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 4px rgba(21, 131, 94, 0.12);
+}
+
+.phone-preview-stage {
+  min-height: 520px;
+  padding: 28px 18px 22px;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(45deg, rgba(255,255,255,.42) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,.42) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255,255,255,.42) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.42) 75%),
+    #e8ebee;
+  background-size: 18px 18px;
+  background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+}
+
+.phone-frame {
+  position: relative;
+  width: min(300px, 100%);
+  aspect-ratio: 9 / 16;
+  padding: 9px;
+  border: 7px solid #181a1f;
+  border-radius: 34px;
+  background: #08090b;
+  box-shadow: 0 24px 48px rgba(15, 20, 25, .28), inset 0 0 0 1px rgba(255,255,255,.12);
+}
+
+.phone-speaker {
+  position: absolute;
+  z-index: 6;
+  top: 7px;
+  left: 50%;
+  width: 72px;
+  height: 16px;
+  transform: translateX(-50%);
+  border-radius: 0 0 10px 10px;
+  background: #08090b;
+}
+
+.phone-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 24px;
+  color: #fff;
+  background: #17191d;
+  isolation: isolate;
+}
+
+.phone-background,
+.phone-background-dim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.phone-background {
+  z-index: 0;
+  display: block;
+  object-fit: cover;
+}
+
+.phone-background-dim {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.phone-top-tabs {
+  position: absolute;
+  z-index: 4;
+  top: 11px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  color: rgba(255,255,255,.72);
+  font-size: 10px;
+  text-shadow: 0 1px 4px rgba(0,0,0,.65);
+}
+
+.phone-top-tabs strong {
+  color: #fff;
+  font-size: 11px;
+}
+
+.phone-card-anchor {
+  position: absolute;
+  z-index: 3;
+  top: 43px;
+  left: 12px;
+  right: 12px;
+  max-height: 54%;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.phone-tweet-card {
+  width: 100% !important;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 10px 11px 8px;
+  border-radius: 4px;
+  box-shadow: 0 14px 28px rgba(0,0,0,.38);
+}
+
+.phone-tweet-card .tweet-header {
+  gap: 6px;
+}
+
+.phone-tweet-card .tweet-avatar {
+  width: 27px;
+  height: 27px;
+}
+
+.phone-tweet-card .tweet-name-line {
+  gap: 2px;
+  font-size: 9px;
+  line-height: 1.15;
+}
+
+.phone-tweet-card .verified-icon {
+  font-size: 10px;
+}
+
+.phone-tweet-card .tweet-actions-top {
+  display: none;
+}
+
+.phone-tweet-card .tweet-body {
+  max-height: 128px;
+  padding: 8px 0;
+  overflow: hidden;
+  line-height: 1.48;
+}
+
+.phone-tweet-card .tweet-metrics {
+  min-height: 22px;
+  padding-left: 0;
+  gap: 3px;
+}
+
+.phone-tweet-card .tweet-metrics span {
+  gap: 2px;
+}
+
+.phone-tweet-card .tweet-metrics svg {
+  width: 11px;
+  height: 11px;
+}
+
+.phone-tweet-card .tweet-metrics em {
+  font-size: 7px;
+}
+
+.phone-feed-author,
+.phone-feed-caption,
+.phone-feed-audio {
+  position: absolute;
+  z-index: 4;
+  left: 13px;
+  right: 61px;
+  text-shadow: 0 1px 4px rgba(0,0,0,.72);
+}
+
+.phone-feed-author {
+  bottom: 91px;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 9px;
+}
+
+.phone-feed-author strong {
+  font-size: 11px;
+}
+
+.phone-feed-author span {
+  opacity: .78;
+}
+
+.phone-feed-caption {
+  bottom: 65px;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.phone-feed-audio {
+  right: 48px;
+  bottom: 47px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 8px;
+  opacity: .9;
+}
+
+.phone-action-rail {
+  position: absolute;
+  z-index: 4;
+  right: 7px;
+  top: 43%;
+  display: grid;
+  gap: 13px;
+  justify-items: center;
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(0,0,0,.72);
+}
+
+.phone-action-rail span {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  font-size: 8px;
+}
+
+.phone-action-rail svg {
+  width: 23px;
+  height: 23px;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.58));
+}
+
+.phone-bottom-nav {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 45px;
+  padding: 0 8px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  text-align: center;
+  background: rgba(0,0,0,.84);
+  font-size: 8px;
+}
+
+.phone-bottom-nav b {
+  width: 31px;
+  height: 24px;
+  margin: 0 auto;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #111;
+  background: #fff;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.phone-preview-note {
+  margin: 0;
+  padding: 0 18px 16px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 10px;
+}
+
+/* The phone simulation follows the page in the single-column mobile layout. */
+@media (max-width: 860px) {
+  .control-panel {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .preview-panel {
+    position: static;
+    display: block;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .preview-stage {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .phone-preview-stage {
+    min-height: 470px;
+    padding: 22px 12px 18px;
+  }
+
+  .phone-frame {
+    width: min(280px, calc(100vw - 54px));
+  }
+}
+
+@media (max-width: 620px) {
+  .phone-preview-heading {
+    padding: 0 12px;
+  }
+
+  .phone-preview-heading > span {
+    font-size: 10px;
+  }
+
+  .phone-preview-stage {
+    min-height: 430px;
+  }
+
+  .phone-frame {
+    width: min(255px, calc(100vw - 38px));
+  }
+
+  .phone-preview-note {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}
