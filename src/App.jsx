@@ -242,7 +242,7 @@ function getImageProxyUrl(source) {
   try {
     const parsed = new URL(source);
     if (parsed.hostname === "images.weserv.nl") return null;
-    return \`https://images.weserv.nl/?url=\${encodeURIComponent(parsed.host + parsed.pathname + parsed.search)}\`;
+    return `https://images.weserv.nl/?url=${encodeURIComponent(parsed.host + parsed.pathname + parsed.search)}`;
   } catch {
     return null;
   }
@@ -270,7 +270,7 @@ async function fetchImageAsDataUrl(source) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         const response = await fetch(candidate, { cache: attempt === 0 ? "force-cache" : "reload" });
-        if (!response.ok) throw new Error(\`image \${response.status}\`);
+        if (!response.ok) throw new Error(`image ${response.status}`);
         return await blobToDataUrl(await response.blob());
       } catch (error) {
         lastError = error;
@@ -307,9 +307,9 @@ async function createStableExportClone(node) {
 }
 
 function formatLongDate(value) {
-  const date = new Date(\`\${value}T00:00:00+08:00\`);
+  const date = new Date(`${value}T00:00:00+08:00`);
   if (Number.isNaN(date.getTime())) return String(value || "");
-  return \`下午12:46 · \${date.getFullYear()}年\${date.getMonth() + 1}月\${date.getDate()}日\`;
+  return `下午12:46 · ${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
 function XLogo() {
@@ -322,19 +322,19 @@ function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = 
   const bodyParagraphs = String(text || "").split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter(Boolean);
   const cardClassName = [
     "tweet-card",
-    \`theme-\${cardTheme}\`,
-    \`card-\${orientation}\`,
+    `theme-${cardTheme}`,
+    `card-${orientation}`,
     poster ? "poster-tweet-card" : "",
     className,
   ].filter(Boolean).join(" ");
   return <article className={cardClassName} ref={cardRef} aria-label="推文图片预览" style={{ opacity }}>
     <header className="tweet-header">
-      <img className="tweet-avatar" src={profile.avatar} alt={\`\${profile.name}头像\`} />
+      <img className="tweet-avatar" src={profile.avatar} alt={`${profile.name}头像`} />
       <div className="tweet-identity"><div className="tweet-name-line"><strong>{profile.name}</strong><SealCheck weight="fill" className="verified-icon" /><span>{profile.handle}</span><span>·</span><span>{formatDate(profile.date)}</span></div></div>
       <div className="tweet-actions-top" aria-hidden="true"><XLogo /><DotsThree size={25} weight="bold" /></div>
     </header>
-    <div className="tweet-body" style={{ fontSize: \`\${fontSize}px\` }}>
-      {bodyParagraphs.length ? bodyParagraphs.map((paragraph, index) => <p key={\`\${index}-\${paragraph.slice(0, 12)}\`}>{paragraph}</p>) : <p>暂无正文</p>}
+    <div className="tweet-body" style={{ fontSize: `${fontSize}px` }}>
+      {bodyParagraphs.length ? bodyParagraphs.map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 12)}`}>{paragraph}</p>) : <p>暂无正文</p>}
     </div>
     <div className="tweet-meta-row"><span>{formatLongDate(profile.date)}</span><span>·</span><strong>{formatMetric(metrics.views)} 查看</strong></div>
     <footer className="tweet-metrics">
