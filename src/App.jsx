@@ -6,6 +6,8 @@ import {
   Repeat, SealCheck, ShieldCheck, Shuffle, Sparkle, UploadSimple, WarningCircle,
 } from "@phosphor-icons/react";
 import tweets from "./tweets.json";
+import dontbesilentPosts from "./dontbesilent-posts.json";
+import dontbesilentCaptions from "./dontbesilent-captions.json";
 import baseContentSources from "./content-sources.json";
 import feishuContentSources from "./feishu-content-sources.json";
 
@@ -26,9 +28,27 @@ function interleaveContentSources(featured, base) {
 
 const contentSources = interleaveContentSources(feishuContentSources, baseContentSources);
 
+const tianCeTweets = tweets.map((tweet) => ({ ...tweet, library: "天策原推", topic: tweet.topic || "天策素材" }));
+const dontbesilentTweets = dontbesilentPosts.map((post) => ({
+  id: post.id,
+  date: post.date,
+  text: post.text,
+  likes: Number(post.metrics?.likes || 0),
+  reposts: Number(post.metrics?.reposts || 0),
+  engagement: Number(post.metrics?.engagement || 0),
+  url: post.sourceUrl,
+  kind: post.kind,
+  format: post.format,
+  tags: post.tags || [],
+  topic: post.topic || "未分类",
+  library: "dontbesilent",
+}));
+const allTweets = [...tianCeTweets, ...dontbesilentTweets];
+const allCaptions = Array.isArray(dontbesilentCaptions) ? dontbesilentCaptions : [];
+
 const defaultAvatar = assetPath("assets/aimaguohe-avatar.jpg");
-const initialTweet = tweets.find((tweet) => tweet.id === "2000941227961733492") || tweets[0];
-const backgrounds = [
+const initialTweet = tianCeTweets.find((tweet) => tweet.id === "2000941227961733492") || tianCeTweets[0];
+const tianCeBackgrounds = [
   { id: "city-1", name: "香港海边", tags: "香港 城市 海边 蓝天", src: assetPath("backgrounds/city-1.jpg") },
   { id: "city-2", name: "城市天际线", tags: "香港 城市 天际线 日落", src: assetPath("backgrounds/city-2.jpg") },
   { id: "city-3", name: "街头夜景", tags: "城市 街头 夜景 情绪", src: assetPath("backgrounds/city-3.jpg") },
@@ -52,6 +72,39 @@ const backgrounds = [
   { id: "desert", name: "沙漠光影", tags: "沙漠 金色 光影 自然", src: assetPath("backgrounds/generated-desert.svg") },
   { id: "cloud", name: "云上蓝天", tags: "蓝天 云朵 清新 自由", src: assetPath("backgrounds/generated-cloud.svg") },
   { id: "matrix", name: "矩阵光线", tags: "矩阵 光线 绿色 黑色 科技", src: assetPath("backgrounds/generated-matrix.svg") },
+];
+
+const dontbesilentNamedBackgrounds = [
+  { name: "城市夜色", tags: "城市 夜景 蓝色", file: "city-night.jpeg" },
+  { name: "云山之间", tags: "山 云 自然 风景", file: "cloud-mountain.jpeg" },
+  { name: "海岸公路", tags: "海岸 公路 旅行 风景", file: "coast-road.jpeg" },
+  { name: "林间微光", tags: "森林 光影 自然", file: "forest-light.jpeg" },
+  { name: "蓝色港湾", tags: "港湾 海洋 蓝色", file: "harbor-blue.jpeg" },
+  { name: "雾中山谷", tags: "山谷 雾 自然", file: "misty-valley.jpeg" },
+  { name: "山谷远眺", tags: "山谷 远景 自然", file: "mountain-valley.jpeg" },
+  { name: "城市天际线", tags: "城市 天际线 夜景", file: "skyline.jpeg" },
+];
+
+const dontbesilentTravelBackgrounds = Array.from({ length: 110 }, (_, index) => {
+  const number = String(index + 1).padStart(3, "0");
+  return {
+    id: `dontbesilent-travel-${number}`,
+    name: `旅行风景 ${number}`,
+    tags: "dontbesilent 旅行 风景 自然",
+    file: `travel-${number}.jpeg`,
+  };
+});
+
+const dontbesilentBackgrounds = [...dontbesilentNamedBackgrounds, ...dontbesilentTravelBackgrounds].map((item) => ({
+  ...item,
+  id: item.id || `dontbesilent-${item.file.replace(/\.[^.]+$/, "")}`,
+  library: "dontbesilent图库",
+  src: assetPath(`backgrounds/dontbesilent/${item.file}`),
+}));
+
+const backgrounds = [
+  ...tianCeBackgrounds.map((item) => ({ ...item, library: "天策图库" })),
+  ...dontbesilentBackgrounds,
 ];
 
 function formatDate(value) {
@@ -162,7 +215,7 @@ function buildPublishCopy(text) {
   }
 
   const tags = [];
-  const add = (tag) => { if (!tags.includes(tag) && tags.length < 2) tags.push(tag); };
+  const add = (tag) => { if (!tags.includes(tag) && tags.length < 4) tags.push(tag); };
   if (/(AI|GPT|ChatGPT|Gemini|Token|人工智能)/i.test(clean)) add("#AI");
   if (/(创业|赚钱|商业|项目|收入|利润)/.test(clean)) { add("#创业"); add("#财富"); }
   if (/(写作|内容|口播|自媒体|流量)/.test(clean)) add("#自媒体");
@@ -171,7 +224,9 @@ function buildPublishCopy(text) {
   if (/(成长|学习|执行|行动|拖延)/.test(clean)) add("#个人成长");
   if (tags.length === 0) add("#认知");
   if (tags.length === 1) add("#个人成长");
-  return `${sentence} ${tags.join(" ")} #AI马过河`;
+  const finalTags = [...tags.filter((tag) => tag !== "#AI马过河"), "#AI马过河"];
+  if (finalTags.length < 3) finalTags.push("#抖音图文");
+  return `${sentence} ${[...new Set(finalTags)].slice(0, 5).join(" ")}`;
 }
 
 function blobToDataUrl(blob) {
@@ -222,8 +277,8 @@ async function createStableExportClone(node) {
   }
 }
 
-function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = "portrait", poster = false, profile }) {
-  return <article className={`tweet-card theme-${cardTheme} card-${orientation} ${poster ? "poster-tweet-card" : ""}`} ref={cardRef} aria-label="推文图片预览">
+function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = "portrait", poster = false, profile, opacity = 1 }) {
+  return <article className={`tweet-card theme-${cardTheme} card-${orientation} ${poster ? "poster-tweet-card" : ""}`} ref={cardRef} aria-label="推文图片预览" style={{ opacity }}>
     <header className="tweet-header">
       <img className="tweet-avatar" src={profile.avatar} alt={`${profile.name}头像`} />
       <div className="tweet-identity"><div className="tweet-name-line"><strong>{profile.name}</strong><SealCheck weight="fill" className="verified-icon" /><span>{profile.handle}</span><span>·</span><span>{formatDate(profile.date)}</span></div></div>
@@ -245,6 +300,9 @@ export function App() {
   const [outputMode, setOutputMode] = useState("poster");
   const [orientation, setOrientation] = useState("portrait");
   const [query, setQuery] = useState("");
+  const [historyLibrary, setHistoryLibrary] = useState("全部");
+  const [historyTopic, setHistoryTopic] = useState("全部");
+  const [historyPage, setHistoryPage] = useState(1);
   const [selectedId, setSelectedId] = useState(initialTweet?.id);
   const [draft, setDraft] = useState(() => createDraft(initialTweet));
   const [draftStyle, setDraftStyle] = useState("auto");
@@ -257,13 +315,18 @@ export function App() {
   const [cardTheme, setCardTheme] = useState("light");
   const [background, setBackground] = useState(backgrounds[0].src);
   const [backgroundQuery, setBackgroundQuery] = useState("");
+  const [backgroundLibrary, setBackgroundLibrary] = useState("全部");
+  const [backgroundPage, setBackgroundPage] = useState(1);
   const [backgroundUrl, setBackgroundUrl] = useState("");
   const [overlay, setOverlay] = useState(18);
   const [cardScale, setCardScale] = useState(0.9);
+  const [cardOpacity, setCardOpacity] = useState(1);
+  const [cardRotation, setCardRotation] = useState(0);
   const [cardPosition, setCardPosition] = useState({ x: 0, y: 0 });
   const [exporting, setExporting] = useState(false);
   const [exported, setExported] = useState(false);
   const [publishCopy, setPublishCopy] = useState("");
+  const [captionIndex, setCaptionIndex] = useState(0);
   const [metricsTick, setMetricsTick] = useState(0);
   const [copyStatus, setCopyStatus] = useState("");
   const [profileAvatar, setProfileAvatar] = useState(defaultAvatar);
@@ -276,7 +339,7 @@ export function App() {
   const dragStateRef = useRef(null);
   const pinchRef = useRef(null);
   const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-  const selected = useMemo(() => tweets.find((tweet) => tweet.id === selectedId) || tweets[0], [selectedId]);
+  const selected = useMemo(() => allTweets.find((tweet) => tweet.id === selectedId) || allTweets[0], [selectedId]);
   const selectedSource = useMemo(() => contentSources.find((source) => source.id === selectedSourceId) || contentSources[0], [selectedSourceId]);
   const metricKey = mode === "sources" ? selectedSourceId : selectedId;
   const metrics = useMemo(() => buildDemoMetrics(metricKey, metricsTick), [metricKey, metricsTick]);
@@ -300,16 +363,21 @@ export function App() {
     return contentSources.filter((source) => (sourceCategory === "全部" || source.category === sourceCategory) && (!needle || `${source.title} ${source.insight} ${source.angle} ${source.draft || ""} ${source.action || ""} ${source.sourceName || ""} ${(source.tags || []).join(" ")} ${(source.productFit || []).join(" ")}`.toLowerCase().includes(needle)));
   }, [sourceCategory, sourceQuery]);
   const visibleSourceResults = sourceResults.slice(0, 100);
-  const results = useMemo(() => {
+  const historyTopics = ["全部", ...new Set(allTweets.map((tweet) => tweet.topic).filter(Boolean))];
+  const historyResults = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return tweets.slice(0, 12);
-    return tweets.filter((tweet) => `${tweet.text} ${tweet.date}`.toLowerCase().includes(needle)).slice(0, 20);
-  }, [query]);
+    return allTweets.filter((tweet) => (historyLibrary === "全部" || tweet.library === historyLibrary) && (historyTopic === "全部" || tweet.topic === historyTopic) && (!needle || `${tweet.text} ${tweet.date} ${tweet.topic} ${(tweet.tags || []).join(" ")}`.toLowerCase().includes(needle)));
+  }, [historyLibrary, historyTopic, query]);
+  const visibleHistoryResults = historyResults.slice(0, historyPage * 20);
   const backgroundResults = useMemo(() => {
     const needle = backgroundQuery.trim().toLowerCase();
-    return backgrounds.filter((item) => !needle || `${item.name} ${item.tags}`.toLowerCase().includes(needle));
-  }, [backgroundQuery]);
-  useEffect(() => setExported(false), [mode, outputMode, orientation, selectedId, draft, fontSize, cardTheme, background, overlay, cardScale, cardPosition, metricsTick, profile]);
+    return backgrounds.filter((item) => (backgroundLibrary === "全部" || item.library === backgroundLibrary) && (!needle || `${item.name} ${item.tags}`.toLowerCase().includes(needle)));
+  }, [backgroundLibrary, backgroundQuery]);
+  const visibleBackgroundResults = backgroundResults.slice(0, backgroundPage * 30);
+  const backgroundLibraries = ["全部", "天策图库", "dontbesilent图库"];
+  useEffect(() => setBackgroundPage(1), [backgroundLibrary, backgroundQuery]);
+  useEffect(() => setHistoryPage(1), [historyLibrary, historyTopic, query]);
+  useEffect(() => setExported(false), [mode, outputMode, orientation, selectedId, draft, fontSize, cardTheme, background, overlay, cardScale, cardOpacity, cardRotation, cardPosition, metricsTick, profile]);
   useEffect(() => setCardPosition({ x: 0, y: 0 }), [orientation]);
   useEffect(() => { setPublishCopy(""); setCopyStatus(""); }, [mode, selectedId, draft]);
 
@@ -323,7 +391,16 @@ export function App() {
     const alternatives = pool.filter((source) => source.id !== selectedSourceId);
     selectSource((alternatives.length ? alternatives : pool)[Math.floor(Math.random() * (alternatives.length ? alternatives.length : pool.length))]);
   }
-  function pickRandom() { const pool = tweets.slice(0, Math.min(100, tweets.length)); selectTweet(pool[Math.floor(Math.random() * pool.length)]); }
+  function pickRandom() {
+    const pool = historyResults.length ? historyResults : allTweets;
+    selectTweet(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  function pickRandomBackground() {
+    const pool = backgroundResults.length ? backgroundResults : backgrounds;
+    const alternatives = pool.filter((item) => item.src !== background);
+    const next = (alternatives.length ? alternatives : pool)[Math.floor(Math.random() * (alternatives.length ? alternatives.length : pool.length))];
+    if (next) setBackground(next.src);
+  }
   function loadUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -350,6 +427,17 @@ export function App() {
     }
   }
   function generatePublishCopy() { const next = buildPublishCopy(activeText); setPublishCopy(next); setCopyStatus(""); return next; }
+  function generateOfflineCaption() {
+    if (!allCaptions.length) return generatePublishCopy();
+    const caption = String(allCaptions[captionIndex % allCaptions.length]).trim();
+    const tags = buildPublishCopy(`${caption} ${activeText}`).match(/#[^\s]+/g) || ["#AI马过河", "#抖音图文", "#内容创作"];
+    const uniqueTags = [...new Set(tags)].slice(0, 5);
+    const next = `${caption} ${uniqueTags.join(" ")}`;
+    setCaptionIndex((index) => index + 1);
+    setPublishCopy(next);
+    setCopyStatus("");
+    return next;
+  }
   async function copyDescription() {
     const value = publishCopy || generatePublishCopy();
     try {
@@ -360,7 +448,18 @@ export function App() {
     setCopyStatus("已复制，可直接粘贴到抖音");
     window.setTimeout(() => setCopyStatus(""), 2200);
   }
-  function resetCardPlacement() { setCardScale(0.9); setCardPosition({ x: 0, y: 0 }); }
+  function resetCardPlacement() { setCardScale(0.9); setCardOpacity(1); setCardRotation(0); setCardPosition({ x: 0, y: 0 }); }
+  function fitCardToCanvas() {
+    const stage = exportRef.current;
+    const card = stage?.querySelector(".poster-tweet-card");
+    if (!stage || !card) return;
+    const maxWidth = stage.clientWidth * 0.9;
+    const maxHeight = stage.clientHeight * 0.86;
+    const fitRatio = Math.min(maxWidth / card.offsetWidth, maxHeight / card.offsetHeight);
+    const internalFit = posterFitScale || 1;
+    setCardScale(Math.max(0.45, Math.min(1.4, fitRatio / internalFit)));
+    setCardPosition({ x: 0, y: 0 });
+  }
   function startDragging(event) {
     if (outputMode !== "poster") return;
     if (pinchRef.current) return;
@@ -395,7 +494,7 @@ export function App() {
     const dx = e.touches[0].clientX - e.touches[1].clientX;
     const dy = e.touches[0].clientY - e.touches[1].clientY;
     const ratio = Math.hypot(dx, dy) / pinchRef.current.dist;
-    setCardScale(Math.max(0.55, Math.min(1.2, pinchRef.current.scale * ratio)));
+    setCardScale(Math.max(0.45, Math.min(1.4, pinchRef.current.scale * ratio)));
   }
   function handleTouchEnd() { pinchRef.current = null; }
   async function deliverImage(dataUrl, filename) {
@@ -428,7 +527,8 @@ export function App() {
     try {
       const stable = await createStableExportClone(node);
       cleanup = stable.cleanup;
-      const dataUrl = await toPng(stable.clone, { cacheBust: false, pixelRatio: 2, backgroundColor });
+      const isDouyinPoster = stable.clone.classList.contains("douyin-poster");
+      const dataUrl = await toPng(stable.clone, { cacheBust: false, pixelRatio: isDouyinPoster ? 1.5 : 2, backgroundColor });
       await deliverImage(dataUrl, filename);
       setExported(true);
       window.setTimeout(() => setExported(false), 1800);
@@ -470,39 +570,47 @@ export function App() {
           <p className="source-note"><ShieldCheck weight="fill" /> 为保证页面流畅，每次展示前 100 条，搜索和分类会检索完整素材库。数据、个人经历和收入在发布前必须复核，不得虚构。</p>
         </section>}
         {mode !== "sources" && <section className="panel-section archive-section">
-          <div className="section-heading compact"><span className="step-number">02</span><div><h2>搜索 {tweets.length} 条推文</h2><p>搜关键词，点一条就能直接用</p></div></div>
-          <div className="search-row"><label className="search-box"><MagnifyingGlass /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="例如：创业、AI、自媒体" /></label><button className="icon-button" onClick={pickRandom}><Shuffle /></button></div>
-          <div className="tweet-list" role="listbox">{results.map((tweet) => <button key={tweet.id} className={`tweet-list-item ${tweet.id === selected.id ? "selected" : ""}`} onClick={() => selectTweet(tweet)}><span className="item-date">{tweet.date}</span><strong>{tweet.text.replace(/\s+/g, " ").slice(0, 58)}</strong><span className="item-stats">{tweet.likes.toLocaleString("zh-CN")} 赞 · {tweet.reposts.toLocaleString("zh-CN")} 转</span></button>)}{results.length === 0 && <div className="empty-state">没有找到，换一个关键词。</div>}</div>
+          <div className="section-heading compact"><span className="step-number">02</span><div><h2>搜索 {allTweets.length.toLocaleString("zh-CN")} 条推文</h2><p>当前筛选 {historyResults.length.toLocaleString("zh-CN")} 条，点一条就能直接用</p></div></div>
+          <div className="search-row"><label className="search-box"><MagnifyingGlass /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="例如：创业、AI、自媒体、行动" /></label><button className="icon-button" onClick={pickRandom} title="从当前筛选随机一条" aria-label="随机一条历史推文"><Shuffle /></button></div>
+          <div className="category-pills archive-library-pills">{["全部", "天策原推", "dontbesilent"].map((library) => <button key={library} className={historyLibrary === library ? "active" : ""} onClick={() => setHistoryLibrary(library)}>{library}<em>{library === "全部" ? allTweets.length : allTweets.filter((tweet) => tweet.library === library).length}</em></button>)}</div>
+          <div className="category-pills archive-topic-pills">{historyTopics.slice(0, 10).map((topic) => <button key={topic} className={historyTopic === topic ? "active" : ""} onClick={() => setHistoryTopic(topic)}>{topic}</button>)}{historyTopics.length > 10 && <span className="category-more-hint">还有 {historyTopics.length - 10} 个主题可用搜索筛选</span>}</div>
+          <div className="tweet-list" role="listbox">{visibleHistoryResults.map((tweet) => <button key={`${tweet.library}-${tweet.id}`} className={`tweet-list-item ${tweet.id === selected.id ? "selected" : ""}`} onClick={() => selectTweet(tweet)}><span className="item-date">{tweet.date} · {tweet.library}</span><strong>{tweet.text.replace(/\s+/g, " ").slice(0, 58)}</strong><span className="item-stats">{tweet.likes ? tweet.likes.toLocaleString("zh-CN") : "—"} 赞 · {tweet.reposts ? tweet.reposts.toLocaleString("zh-CN") : "—"} 转</span></button>)}{visibleHistoryResults.length === 0 && <div className="empty-state">没有找到，换一个关键词。</div>}</div>
+          {visibleHistoryResults.length < historyResults.length && <button className="load-more-history" onClick={() => setHistoryPage((page) => page + 1)}>查看更多历史内容（还剩 {historyResults.length - visibleHistoryResults.length} 条）</button>}
         </section>}
         {mode === "sources" && <section className="panel-section editor-section"><div className="section-heading compact"><span className="step-number">03</span><div><h2>调整生成内容</h2><p>保留事实，改成你自己真实说话的方式</p></div></div><textarea value={sourceDraft} onChange={(event) => setSourceDraft(event.target.value)} rows={10} /><div className="editor-actions"><span>{sourceDraft.length} 字</span><button className="secondary-button" onClick={() => setSourceDraft(createSourceDraft(selectedSource))}><Sparkle weight="fill" /> 重新生成</button></div></section>}
         {mode === "draft" && <section className="panel-section editor-section"><div className="section-heading compact"><span className="step-number">03</span><div><h2>选择改写感觉</h2><p>不是换一句话，而是整篇换结构</p></div></div><div className="rewrite-style-pills">{rewriteStyles.map((style) => <button key={style.id} className={draftStyle === style.id ? "active" : ""} onClick={() => chooseDraftStyle(style.id)}>{style.label}</button>)}</div><textarea value={draft} onChange={(event) => setDraft(event.target.value)} rows={10} /><div className="editor-actions"><span>{draft.length} 字</span><button className="secondary-button" onClick={() => rewriteDraft(selected, draftStyle, draftVariant + 1)}><Shuffle weight="fill" /> 换一种写法</button></div><p className="rewrite-note">内容只营造“尽快真正用上AI”的认知，不写收益承诺、诱导购买或无法核实的个人经历。</p></section>}
         <section className="panel-section output-section"><div className="section-heading compact"><span className="step-number">{outputStep}</span><div><h2>选择发布样式</h2><p>背景始终为抖音竖图，只调整推文卡片</p></div></div><div className="output-picker"><button className={outputMode === "poster" ? "active" : ""} onClick={() => setOutputMode("poster")}><ImageSquare weight="fill" /><strong>背景图成品</strong><span>固定竖版 3:4 背景</span></button><button className={outputMode === "card" ? "active" : ""} onClick={() => setOutputMode("card")}><BookmarkSimple weight="fill" /><strong>纯推文卡片</strong><span>没有额外背景</span></button></div><div className="orientation-control"><span>推文卡片版式</span><div className="orientation-picker" role="group" aria-label="选择推文卡片版式"><button type="button" className={orientation === "portrait" ? "active" : ""} onClick={() => setOrientation("portrait")}><i className="orientation-icon portrait" />竖版卡片</button><button type="button" className={orientation === "landscape" ? "active" : ""} onClick={() => setOrientation("landscape")}><i className="orientation-icon landscape" />横版卡片</button></div><small>系统会根据内容长度自动调整字号和卡片高度，背景画布不会改变。</small></div></section>
         {outputMode === "poster" && <section className="panel-section background-section">
           <div className="section-heading compact"><span className="step-number">{backgroundStep}</span><div><h2>选择背景</h2><p>内置图库、本地上传、网络图片都能用</p></div></div>
-          <label className="search-box background-search"><MagnifyingGlass /><input value={backgroundQuery} onChange={(event) => setBackgroundQuery(event.target.value)} placeholder="搜：香港、城市、夜景、山海" /></label>
-          <div className="background-grid">{backgroundResults.map((item) => <button key={item.id} className={background === item.src ? "active" : ""} onClick={() => setBackground(item.src)}><img src={item.src} alt={item.name} /><span>{item.name}</span></button>)}</div>
+          <div className="background-toolbar"><label className="search-box background-search"><MagnifyingGlass /><input value={backgroundQuery} onChange={(event) => setBackgroundQuery(event.target.value)} placeholder="搜：城市、旅行、夜景、山海" /></label><button className="icon-button" onClick={pickRandomBackground} title="随机切换背景" aria-label="随机切换背景"><Shuffle /></button></div>
+          <div className="category-pills background-library-pills">{backgroundLibraries.map((library) => <button key={library} className={backgroundLibrary === library ? "active" : ""} onClick={() => setBackgroundLibrary(library)}>{library}<em>{library === "全部" ? backgrounds.length : backgrounds.filter((item) => item.library === library).length}</em></button>)}</div>
+          <p className="background-count">当前显示 {visibleBackgroundResults.length} / {backgroundResults.length} 张 · 天策图库与 dontbesilent 图库已分开标记</p>
+          <div className="background-grid">{visibleBackgroundResults.map((item) => <button key={item.id} className={background === item.src ? "active" : ""} onClick={() => setBackground(item.src)}><img src={item.src} loading="lazy" alt={item.name} /><span>{item.name}</span><small>{item.library}</small></button>)}</div>
+          {visibleBackgroundResults.length < backgroundResults.length && <button className="load-more-backgrounds" onClick={() => setBackgroundPage((page) => page + 1)}>查看更多背景（还剩 {backgroundResults.length - visibleBackgroundResults.length} 张）</button>}
           <div className="background-actions"><label className="upload-button"><UploadSimple /> 上传自己的背景<input type="file" accept="image/*" onChange={loadUpload} /></label><div className="url-row"><input value={backgroundUrl} onChange={(event) => setBackgroundUrl(event.target.value)} placeholder="或粘贴网上的图片地址" /><button onClick={applyBackgroundUrl}>使用</button></div></div>
           <label className="range-label"><span>背景压暗 <b>{overlay}%</b></span><input type="range" min="0" max="55" value={overlay} onChange={(event) => setOverlay(Number(event.target.value))} /></label>
           <div className="placement-controls">
-            <label className="range-label"><span>卡片大小 <b>{Math.round(cardScale * 100)}%</b></span><input type="range" min="55" max="120" value={Math.round(cardScale * 100)} onChange={(event) => setCardScale(Number(event.target.value) / 100)} /></label>
-            <div className="drag-help"><span>在右侧直接拖动卡片调整位置</span><button onClick={resetCardPlacement}>居中重置</button></div>
+            <label className="range-label"><span>卡片大小 <b>{Math.round(cardScale * 100)}%</b></span><input type="range" min="45" max="140" value={Math.round(cardScale * 100)} onChange={(event) => setCardScale(Number(event.target.value) / 100)} /></label>
+            <label className="range-label"><span>卡片透明度 <b>{Math.round(cardOpacity * 100)}%</b></span><input type="range" min="45" max="100" value={Math.round(cardOpacity * 100)} onChange={(event) => setCardOpacity(Number(event.target.value) / 100)} /></label>
+            <label className="range-label"><span>卡片旋转 <b>{cardRotation}°</b></span><input type="range" min="-180" max="180" value={cardRotation} onChange={(event) => setCardRotation(Number(event.target.value))} /></label>
+            <div className="drag-help"><span>拖动卡片调整位置 · 双指缩放</span><div><button onClick={fitCardToCanvas}>适配画布</button><button onClick={resetCardPlacement}>居中重置</button></div></div>
           </div>
         </section>}
         <section className="panel-section visual-section"><div className="section-heading compact"><span className="step-number">{finishStep}</span><div><h2>检查并下载</h2><p>右侧看到的就是最终图片</p></div></div><div className="profile-editor"><div className="profile-avatar-editor"><img src={profileAvatar} alt="当前头像" /><label><UploadSimple /> 自定义头像<input type="file" accept="image/*" onChange={loadProfileAvatar} /></label></div><div className="profile-fields"><label><span>显示名称</span><input value={profileName} maxLength={30} onChange={(event) => setProfileName(event.target.value)} /></label><label><span>用户名</span><input value={profileHandle} maxLength={32} onChange={(event) => setProfileHandle(event.target.value)} placeholder="@username" /></label><label><span>发布日期</span><input type="date" value={publishDate} onChange={(event) => setPublishDate(event.target.value)} /></label></div></div><div className="card-theme-control"><span>卡片背景</span><div className="card-theme-picker" role="group" aria-label="选择卡片背景"><button type="button" className={cardTheme === "light" ? "active" : ""} onClick={() => setCardTheme("light")}><i className="theme-swatch light" />白色</button><button type="button" className={cardTheme === "dark" ? "active" : ""} onClick={() => setCardTheme("dark")}><i className="theme-swatch dark" />黑色</button></div></div><label className="range-label"><span>正文字号 <b>{fontSize}px</b>{adaptiveCardFontSize < fontSize && <em>长文自动适配为 {adaptiveCardFontSize}px</em>}</span><input type="range" min="13" max="22" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))} /></label><button className="direct-export-button" onClick={exportDirectCard} disabled={exporting}><BookmarkSimple weight="fill" /><span><strong>{isMobile ? "保存纯推文卡片到相册" : "直接导出纯推文卡片"}</strong><small>没有海报背景，尺寸随正文自动增高</small></span></button>{outputMode === "poster" && activeText.length > 700 && <div className="length-warning"><WarningCircle weight="fill" /><span>这条内容很长，系统已经自动缩小卡片。纯卡片导出不会截断，抖音竖图建议适当精简。</span></div>}</section>
         <section className="panel-section publish-copy-section">
-          <div className="section-heading compact"><span className="step-number">{String(Number(finishStep) + 1).padStart(2, "0")}</span><div><h2>准备发布文案和话题</h2><p>自动生成一句文案 + 3 个相关标签</p></div></div>
+          <div className="section-heading compact"><span className="step-number">{String(Number(finishStep) + 1).padStart(2, "0")}</span><div><h2>准备发布文案和话题</h2><p>自动生成一句文案 + 3～5 个相关标签 · 内置 {allCaptions.length} 条离线文案</p></div></div>
           {publishCopy ? <div className="publish-copy-result">{publishCopy}</div> : <div className="publish-copy-empty">点击下方按钮，根据当前推文自动生成。</div>}
-          <div className="publish-copy-actions"><button className="secondary-button" onClick={generatePublishCopy}><Sparkle weight="fill" /> {publishCopy ? "重新生成" : "生成发布文案"}</button><button className="copy-button" onClick={copyDescription}><CopySimple weight="bold" /> 一键复制</button></div>
+          <div className="publish-copy-actions"><button className="secondary-button" onClick={generatePublishCopy}><Sparkle weight="fill" /> {publishCopy ? "重新生成" : "生成发布文案"}</button><button className="secondary-button" onClick={generateOfflineCaption}>换一条离线文案</button><button className="copy-button" onClick={copyDescription}><CopySimple weight="bold" /> 一键复制</button></div>
           <p className="copy-check-note">{copyStatus || "复制前快速检查一遍，确认没有偏离原推意思。"}</p>
         </section>
       </aside>
       <section className="preview-panel">
         <div className="preview-toolbar"><div><span className={`status-dot ${mode}`} /><strong>{outputMode === "poster" ? `竖版 3:4 背景 · ${orientation === "portrait" ? "竖版" : "横版"}卡片` : `${orientation === "portrait" ? "竖版" : "横版"}纯推文卡片预览`}</strong></div><div className="toolbar-actions">{mode === "history" && <a href={selected.url} target="_blank" rel="noreferrer"><LinkSimple /> 查看原推</a>}{mode === "sources" && <a href={selectedSource.sourceUrl} target="_blank" rel="noreferrer"><LinkSimple /> 查看来源</a>}<button type="button" className="ghost-button" onClick={() => setMetricsTick((t) => t + 1)}><ArrowsClockwise /> 换一组数据</button></div></div>
-        <div className={`preview-stage ${outputMode} ${orientation}`}>{outputMode === "poster" ? <div className="douyin-poster" ref={exportRef}><img className="poster-background" src={background} crossOrigin="anonymous" alt="" /><div className="poster-overlay" style={{ background: `rgba(0,0,0,${overlay / 100})` }} /><div className={`poster-card-wrap wrap-${orientation}`} style={{ left: `calc(50% + ${cardPosition.x}px)`, top: `calc(50% + ${cardPosition.y}px)`, transform: `translate(-50%, -50%) scale(${cardScale * posterFitScale})` }} onPointerDown={startDragging} onPointerMove={dragCard} onPointerUp={stopDragging} onPointerCancel={stopDragging} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}><TweetCard text={activeText} fontSize={adaptivePosterFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} poster /></div></div> : <TweetCard cardRef={exportRef} text={activeText} fontSize={adaptiveCardFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} />}</div>
+        <div className={`preview-stage ${outputMode} ${orientation}`}>{outputMode === "poster" ? <div className="douyin-poster" ref={exportRef}><img className="poster-background" src={background} crossOrigin="anonymous" alt="" /><div className="poster-overlay" style={{ background: `rgba(0,0,0,${overlay / 100})` }} /><div className={`poster-card-wrap wrap-${orientation}`} style={{ left: `calc(50% + ${cardPosition.x}px)`, top: `calc(50% + ${cardPosition.y}px)`, transform: `translate(-50%, -50%) rotate(${cardRotation}deg) scale(${cardScale * posterFitScale})` }} onPointerDown={startDragging} onPointerMove={dragCard} onPointerUp={stopDragging} onPointerCancel={stopDragging} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}><TweetCard text={activeText} fontSize={adaptivePosterFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} poster /></div></div> : <TweetCard cardRef={exportRef} text={activeText} fontSize={adaptiveCardFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} />}</div>
         <div className="export-bar"><div className="export-note"><Check weight="bold" /><span>{isMobile ? "生成后在系统面板选择“存储图像”，即可保存到相册。" : outputMode === "poster" ? "下载图片，再复制发布文案，就能直接发抖音。" : "下载纯推文卡片 PNG。"}</span></div><div className="export-actions"><button className="copy-export-button" onClick={copyDescription}><CopySimple weight="bold" /> 复制发布文案</button><button className="download-button" onClick={downloadImage} disabled={exporting}>{exported ? <Check weight="bold" /> : <DownloadSimple weight="bold" />}{exporting ? "正在生成…" : exported ? (isMobile ? "已生成" : "已下载") : (isMobile ? "保存到相册" : "一键下载成品")}</button></div></div>
       </section>
     </div>
-    <div className="poster-export-surface" aria-hidden="true"><div className="douyin-poster" ref={posterExportRef}><img className="poster-background" src={background} crossOrigin="anonymous" alt="" /><div className="poster-overlay" style={{ background: `rgba(0,0,0,${overlay / 100})` }} /><div className={`poster-card-wrap wrap-${orientation}`} style={{ left: `calc(50% + ${cardPosition.x}px)`, top: `calc(50% + ${cardPosition.y}px)`, transform: `translate(-50%, -50%) scale(${cardScale * posterFitScale})` }}><TweetCard text={activeText} fontSize={adaptivePosterFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} poster /></div></div></div>
-    <div className="direct-card-export" aria-hidden="true"><TweetCard cardRef={directCardRef} text={activeText} fontSize={adaptiveCardFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} /></div>
+    <div className="poster-export-surface" aria-hidden="true"><div className="douyin-poster" ref={posterExportRef}><img className="poster-background" src={background} crossOrigin="anonymous" alt="" /><div className="poster-overlay" style={{ background: `rgba(0,0,0,${overlay / 100})` }} /><div className={`poster-card-wrap wrap-${orientation}`} style={{ left: `calc(50% + ${cardPosition.x}px)`, top: `calc(50% + ${cardPosition.y}px)`, transform: `translate(-50%, -50%) rotate(${cardRotation}deg) scale(${cardScale * posterFitScale})` }}><TweetCard text={activeText} fontSize={adaptivePosterFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} poster /></div></div></div>
+    <div className="direct-card-export" aria-hidden="true"><TweetCard cardRef={directCardRef} text={activeText} fontSize={adaptiveCardFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} /></div>
   </main>;
 }

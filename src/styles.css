@@ -368,6 +368,10 @@ a:focus-visible {
   font-weight: 760;
 }
 
+.category-more-hint { align-self: center; color: var(--muted); font-size: 9px; white-space: nowrap; }
+.load-more-history { width: 100%; min-height: 34px; margin-top: 8px; border: 1px dashed #8e877c; color: var(--ink); background: #fffefa; cursor: pointer; font-size: 10px; font-weight: 800; }
+.load-more-history:hover { border-color: var(--orange); color: var(--orange); }
+
 .empty-state {
   padding: 30px 16px;
   text-align: center;
@@ -593,7 +597,10 @@ a:focus-visible {
 .orientation-icon.landscape { width: 16px; height: 11px; }
 .orientation-control small { color: var(--muted); font-size: 9px; font-weight: 500; }
 
+.background-toolbar { display: grid; grid-template-columns: 1fr 42px; gap: 8px; }
 .background-search { width: 100%; }
+.background-library-pills { margin-top: 9px; }
+.background-count { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
 
 .background-grid {
   margin-top: 9px;
@@ -617,6 +624,9 @@ a:focus-visible {
 .background-grid button.active { border-color: var(--orange); box-shadow: 0 0 0 2px rgba(255, 90, 31, 0.2); }
 .background-grid img { width: 100%; height: 62px; display: block; object-fit: cover; }
 .background-grid span { padding-bottom: 2px; font-size: 9px; font-weight: 750; }
+.background-grid small { padding: 0 2px 2px; color: var(--muted); font-size: 8px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.load-more-backgrounds { width: 100%; min-height: 34px; margin-top: 8px; border: 1px dashed #8e877c; color: var(--ink); background: #fffefa; cursor: pointer; font-size: 10px; font-weight: 800; }
+.load-more-backgrounds:hover { border-color: var(--orange); color: var(--orange); }
 
 .background-actions { margin: 10px 0 14px; display: grid; gap: 8px; }
 .upload-button {
@@ -782,6 +792,7 @@ a:focus-visible {
   font-size: 10px;
   font-weight: 800;
 }
+.drag-help > div { display: flex; gap: 6px; }
 
 .publish-copy-result,
 .publish-copy-empty {
@@ -795,7 +806,7 @@ a:focus-visible {
 
 .publish-copy-result { color: #25231f; }
 .publish-copy-empty { display: grid; place-items: center; color: var(--muted); text-align: center; font-size: 10px; }
-.publish-copy-actions { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.publish-copy-actions { margin-top: 8px; display: grid; grid-template-columns: 1.1fr 1fr .8fr; gap: 8px; }
 .publish-copy-actions .secondary-button { width: 100%; }
 .copy-button,
 .copy-export-button {
@@ -1203,6 +1214,7 @@ a:focus-visible {
 
   .background-grid { grid-template-columns: repeat(2, 1fr); }
   .output-picker { grid-template-columns: 1fr; }
+  .publish-copy-actions { grid-template-columns: 1fr; }
 
   .tweet-body {
     padding-left: 0;
