@@ -1749,3 +1749,19 @@ a:focus-visible {
   transform-origin: center top;
   will-change: transform;
 }
+
+
+/* Phone position sync: mirror the poster's logical drag coordinates inside the feed screen. */
+.phone-card-anchor {
+  bottom: 45px;
+  max-height: none;
+  align-items: flex-start;
+}
+
+.phone-card-position {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  transform-origin: center top;
+  will-change: transform;
+}
