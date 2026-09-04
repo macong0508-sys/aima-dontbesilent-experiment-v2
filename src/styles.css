@@ -1739,3 +1739,13 @@ a:focus-visible {
     display: none;
   }
 }
+
+
+/* Keep the phone feed card proportional to the editable poster card. */
+.phone-card-scale {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  transform-origin: center top;
+  will-change: transform;
+}
