@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import {
-  ArrowsClockwise, BookmarkSimple, ChartBar, Check, ChatCircle, CopySimple,
+  ArrowsClockwise, ArrowsOut, BookmarkSimple, ChartBar, Check, ChatCircle, CopySimple,
   DownloadSimple, DotsThree, Heart, ImageSquare, LinkSimple, MagnifyingGlass,
   Repeat, SealCheck, ShieldCheck, Shuffle, Sparkle, UploadSimple, WarningCircle,
 } from "@phosphor-icons/react";
@@ -278,7 +278,7 @@ async function createStableExportClone(node) {
   }
 }
 
-function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = "portrait", poster = false, profile, opacity = 1, className = "" }) {
+function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = "portrait", poster = false, profile, opacity = 1, className = "", resizeControl = null }) {
   return <article className={`tweet-card theme-${cardTheme} card-${orientation} ${poster ? "poster-tweet-card" : ""} ${className}`.trim()} ref={cardRef} aria-label="推文图片预览" style={{ opacity }}>
     <header className="tweet-header">
       <img className="tweet-avatar" src={profile.avatar} alt={`${profile.name}头像`} />
@@ -293,6 +293,7 @@ function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = 
       <span><ChartBar /><em>{formatMetric(metrics.views)}</em></span>
       <span><BookmarkSimple /><em>{formatMetric(metrics.bookmarks)}</em></span>
     </footer>
+    {resizeControl}
   </article>;
 }
 
@@ -387,6 +388,7 @@ export function App() {
   const posterExportRef = useRef(null);
   const directCardRef = useRef(null);
   const dragStateRef = useRef(null);
+  const resizeStateRef = useRef(null);
   const pinchRef = useRef(null);
   const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   const selected = useMemo(() => allTweets.find((tweet) => tweet.id === selectedId) || allTweets[0], [selectedId]);
@@ -401,7 +403,7 @@ export function App() {
   }), [profileAvatar, profileName, profileHandle, publishDate]);
   const activeText = mode === "history" ? selected.text : mode === "sources" ? sourceDraft : draft;
   const adaptiveCardFontSize = getAdaptiveFontSize(activeText, fontSize, false);
-  const adaptivePosterFontSize = getAdaptiveFontSize(activeText, fontSize, true);
+  const adaptivePosterFontSize = Math.max(11, getAdaptiveFontSize(activeText, fontSize + 1, true));
   const posterFitScale = activeText.length > 900 ? 0.62 : activeText.length > 700 ? 0.7 : activeText.length > 520 ? 0.78 : activeText.length > 360 ? 0.86 : 1;
   const sourceCategories = ["全部", ...new Set(contentSources.map((source) => source.category))];
   const sourceCategoryCounts = useMemo(() => contentSources.reduce((counts, source) => {
@@ -531,6 +533,38 @@ export function App() {
   function stopDragging(event) {
     if (dragStateRef.current?.pointerId === event.pointerId) dragStateRef.current = null;
   }
+  function startResizing(event) {
+    if (outputMode !== "poster") return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    resizeStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      origin: cardScale,
+    };
+  }
+  function resizeCard(event) {
+    const resize = resizeStateRef.current;
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    const rect = exportRef.current?.getBoundingClientRect();
+    const canvasScale = rect?.width ? 720 / rect.width : 1;
+    const delta = ((event.clientX - resize.startX) + (event.clientY - resize.startY)) / 2;
+    const nextScale = resize.origin + (delta * canvasScale) / 260;
+    setCardScale(Math.max(0.45, Math.min(1.4, nextScale)));
+  }
+  function stopResizing(event) {
+    const resize = resizeStateRef.current;
+    if (!resize || (event && resize.pointerId !== event.pointerId)) return;
+    try {
+      event?.currentTarget?.releasePointerCapture?.(resize.pointerId);
+    } catch {
+      // Pointer capture may already have been released by the browser.
+    }
+    resizeStateRef.current = null;
+  }
   function handleTouchStart(e) {
     if (outputMode !== "poster" || e.touches.length !== 2) return;
     dragStateRef.current = null;
@@ -656,7 +690,7 @@ export function App() {
       </aside>
       <section className="preview-panel">
         <div className="preview-toolbar"><div><span className={`status-dot ${mode}`} /><strong>{outputMode === "poster" ? `竖版 3:4 背景 · ${orientation === "portrait" ? "竖版" : "横版"}卡片` : `${orientation === "portrait" ? "竖版" : "横版"}纯推文卡片预览`}</strong></div><div className="toolbar-actions">{mode === "history" && <a href={selected.url} target="_blank" rel="noreferrer"><LinkSimple /> 查看原推</a>}{mode === "sources" && <a href={selectedSource.sourceUrl} target="_blank" rel="noreferrer"><LinkSimple /> 查看来源</a>}<button type="button" className="ghost-button" onClick={() => setMetricsTick((t) => t + 1)}><ArrowsClockwise /> 换一组数据</button></div></div>
-        <div className={`preview-stage ${outputMode} ${orientation}`}>{outputMode === "poster" ? <div className="douyin-poster" ref={exportRef}><img className="poster-background" src={background} crossOrigin="anonymous" alt="" /><div className="poster-overlay" style={{ background: `rgba(0,0,0,${overlay / 100})` }} /><div className={`poster-card-wrap wrap-${orientation}`} style={{ left: `calc(50% + ${cardPosition.x}px)`, top: `calc(50% + ${cardPosition.y}px)`, transform: `translate(-50%, -50%) rotate(${cardRotation}deg) scale(${cardScale * posterFitScale})` }} onPointerDown={startDragging} onPointerMove={dragCard} onPointerUp={stopDragging} onPointerCancel={stopDragging} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}><TweetCard text={activeText} fontSize={adaptivePosterFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} poster /></div></div> : <TweetCard cardRef={exportRef} text={activeText} fontSize={adaptiveCardFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} />}</div>
+        <div className={`preview-stage ${outputMode} ${orientation}`}>{outputMode === "poster" ? <div className="douyin-poster" ref={exportRef}><img className="poster-background" src={background} crossOrigin="anonymous" alt="" /><div className="poster-overlay" style={{ background: `rgba(0,0,0,${overlay / 100})` }} /><div className={`poster-card-wrap wrap-${orientation}`} style={{ left: `calc(50% + ${cardPosition.x}px)`, top: `calc(50% + ${cardPosition.y}px)`, transform: `translate(-50%, -50%) rotate(${cardRotation}deg) scale(${cardScale * posterFitScale})` }} onPointerDown={startDragging} onPointerMove={dragCard} onPointerUp={stopDragging} onPointerCancel={stopDragging} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}><TweetCard text={activeText} fontSize={adaptivePosterFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} poster resizeControl={<button type="button" className="card-resize-handle" title="拖动调整卡片大小" aria-label="拖动调整卡片大小" onPointerDown={startResizing} onPointerMove={resizeCard} onPointerUp={stopResizing} onPointerCancel={stopResizing}><ArrowsOut size={14} weight="bold" /></button>} /></div></div> : <TweetCard cardRef={exportRef} text={activeText} fontSize={adaptiveCardFontSize} metrics={metrics} cardTheme={cardTheme} orientation={orientation} profile={profile} opacity={cardOpacity} />}</div>
         {outputMode === "poster" && (
         <PhonePreview
           text={activeText}
