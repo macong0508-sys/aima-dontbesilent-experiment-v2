@@ -697,10 +697,18 @@ a:focus-visible {
 
 .profile-avatar-editor input { display: none; }
 .profile-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.profile-fields label:last-child { grid-column: 1 / -1; }
+.profile-fields > label:last-child { grid-column: 1 / -1; }
 .profile-fields label { display: grid; gap: 4px; }
 .profile-fields span { color: var(--muted); font-size: 9px; font-weight: 750; }
-.profile-fields input { min-width: 0; height: 34px; padding: 0 8px; border: 1px solid #bcb5a9; background: #fffefa; font-size: 11px; }
+.profile-fields input,
+.profile-fields select { min-width: 0; height: 34px; padding: 0 8px; border: 1px solid #bcb5a9; background: #fffefa; font-size: 11px; }
+.profile-fields select { cursor: pointer; }
+.profile-date-time { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr); gap: 8px; min-width: 0; }
+.profile-date-time > label,
+.profile-time-fields label { min-width: 0; }
+.profile-time-fields { min-width: 0; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) minmax(0, .85fr); gap: 8px; }
+.profile-time-fields input,
+.profile-time-fields select { width: 100%; }
 
 .card-theme-control {
   margin-bottom: 16px;
@@ -1228,7 +1236,9 @@ a:focus-visible {
 
   .profile-editor { grid-template-columns: 78px minmax(0, 1fr); }
   .profile-fields { grid-template-columns: 1fr; }
-  .profile-fields label:last-child { grid-column: auto; }
+  .profile-fields > label:last-child { grid-column: auto; }
+  .profile-date-time { grid-template-columns: 1fr; }
+  .profile-time-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
   .export-bar {
     padding: 12px;
