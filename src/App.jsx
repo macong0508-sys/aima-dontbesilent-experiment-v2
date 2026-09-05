@@ -355,10 +355,16 @@ function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background,
   const compactFontSize = Math.max(10, Math.min(14, fontSize - (normalizedText.length > 280 ? 2 : 0)));
   const captionText = feedText.replace(/\s+/g, " ").slice(0, 88);
   const previewScale = Math.max(0.45, Math.min(1.4, Number(cardScale) || 1));
-  // The poster drag coordinates use a 720x960 logical canvas. Map them to the phone's 9:16 screen.
-  const phoneOffsetX = (Number(cardPosition?.x) || 0) * (9 / 24);
-  const phoneOffsetY = (Number(cardPosition?.y) || 0) * 0.5;
+  // Keep the phone preview in the same 720x960 logical coordinate system as the poster.
+  // Percent offsets make the mapping responsive while the phone screen provides the clipping.
+  const phonePositionX = Math.max(-260, Math.min(260, Number(cardPosition?.x) || 0));
+  const phonePositionY = Math.max(-360, Math.min(360, Number(cardPosition?.y) || 0));
   const phoneRotation = Number(cardRotation) || 0;
+  const phonePositionStyle = {
+    left: `calc(50% + ${(phonePositionX / 720) * 100}%)`,
+    top: `calc(43px + ${(phonePositionY / 960) * 100}%)`,
+    transform: `translateX(-50%) rotate(${phoneRotation}deg)`,
+  };
   return (
     <section className="phone-preview" aria-label="手机发布效果预览">
       <div className="phone-preview-heading">
@@ -373,7 +379,7 @@ function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background,
             <div className="phone-background-dim" style={{ background: "rgba(0,0,0," + (overlay / 100) + ")" }} />
             <div className="phone-top-tabs"><span>关注</span><strong>推荐</strong><span>朋友</span></div>
             <div className="phone-card-anchor">
-              <div className="phone-card-position" style={{ transform: "translate(" + phoneOffsetX + "px, " + phoneOffsetY + "px) rotate(" + phoneRotation + "deg)" }}>
+              <div className="phone-card-position" data-position-x={phonePositionX} data-position-y={phonePositionY} style={phonePositionStyle}>
                 <div className="phone-card-scale" style={{ transform: "scale(" + previewScale + ")" }}>
                   <TweetCard
                 text={feedText}
