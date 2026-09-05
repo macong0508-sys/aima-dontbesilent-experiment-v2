@@ -349,22 +349,62 @@ function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = 
   </article>;
 }
 
-function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background, overlay, cardScale = 1, cardPosition = { x: 0, y: 0 }, cardRotation = 0, onBackgroundLoad, onBackgroundError }) {
+function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background, overlay, cardScale = 1, cardPosition = { x: 0, y: 0 }, cardRotation = 0, orientation = "portrait", opacity = 1, canvasRef, onBackgroundLoad, onBackgroundError }) {
   const normalizedText = String(text || "").trim();
-  const feedText = normalizedText.length > 460 ? normalizedText.slice(0, 460).trim() + "…" : normalizedText;
-  const compactFontSize = Math.max(10, Math.min(14, fontSize - (normalizedText.length > 280 ? 2 : 0)));
-  const captionText = feedText.replace(/\s+/g, " ").slice(0, 88);
+  const captionText = normalizedText.replace(/\s+/g, " ").slice(0, 88);
   const previewScale = Math.max(0.45, Math.min(1.4, Number(cardScale) || 1));
-  // Keep the phone preview in the same 720x960 logical coordinate system as the poster.
-  // Percent offsets make the mapping responsive while the phone screen provides the clipping.
   const phonePositionX = Math.max(-260, Math.min(260, Number(cardPosition?.x) || 0));
   const phonePositionY = Math.max(-360, Math.min(360, Number(cardPosition?.y) || 0));
   const phoneRotation = Number(cardRotation) || 0;
-  const phonePositionStyle = {
-    left: `calc(50% + ${(phonePositionX / 720) * 100}%)`,
-    top: `calc(43px + ${(phonePositionY / 960) * 100}%)`,
-    transform: `translateX(-50%) rotate(${phoneRotation}deg)`,
+  const phoneScreenRef = useRef(null);
+  const [canvasMetrics, setCanvasMetrics] = useState({ width: 720, height: 960 });
+  const [phoneWidth, setPhoneWidth] = useState(0);
+
+  useEffect(() => {
+    const readMetrics = () => {
+      const canvas = canvasRef?.current;
+      const screen = phoneScreenRef.current;
+      const canvasRect = canvas?.getBoundingClientRect();
+      const screenRect = screen?.getBoundingClientRect();
+      const width = Number(canvasRect?.width || canvas?.offsetWidth || 720);
+      const height = Number(canvasRect?.height || canvas?.offsetHeight || (width * 4) / 3);
+      const screenWidth = Number(screenRect?.width || screen?.clientWidth || 0);
+      if (width > 0 && height > 0) {
+        setCanvasMetrics((previous) => (
+          Math.abs(previous.width - width) < 0.25 && Math.abs(previous.height - height) < 0.25
+            ? previous
+            : { width, height }
+        ));
+      }
+      if (screenWidth > 0) {
+        setPhoneWidth((previous) => (Math.abs(previous - screenWidth) < 0.25 ? previous : screenWidth));
+      }
+    };
+
+    readMetrics();
+    const observed = [canvasRef?.current, phoneScreenRef.current].filter(Boolean);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(readMetrics);
+    observed.forEach((element) => observer?.observe(element));
+    window.addEventListener("resize", readMetrics);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", readMetrics);
+    };
+  }, [canvasRef]);
+
+  const sourceScale = phoneWidth > 0 ? phoneWidth / canvasMetrics.width : 0.4;
+  const sourceHeight = canvasMetrics.height * sourceScale;
+  const sourceStyle = {
+    width: canvasMetrics.width + "px",
+    height: canvasMetrics.height + "px",
+    transform: "scale(" + sourceScale + ")",
   };
+  const sourceCardStyle = {
+    left: "calc(50% + " + phonePositionX + "px)",
+    top: "calc(50% + " + phonePositionY + "px)",
+    transform: "translate(-50%, -50%) rotate(" + phoneRotation + "deg) scale(" + previewScale + ")",
+  };
+
   return (
     <section className="phone-preview" aria-label="手机发布效果预览">
       <div className="phone-preview-heading">
@@ -374,26 +414,30 @@ function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background,
       <div className="phone-preview-stage">
         <div className="phone-frame">
           <div className="phone-speaker" />
-          <div className="phone-screen">
+          <div className="phone-screen" ref={phoneScreenRef}>
             <img className="phone-background" src={background} crossOrigin="anonymous" onLoad={onBackgroundLoad} onError={onBackgroundError} alt="" />
-            <div className="phone-background-dim" style={{ background: "rgba(0,0,0," + (overlay / 100) + ")" }} />
+            <div className="phone-background-dim" style={{ background: "rgba(0,0," + (overlay / 100) + ")" }} />
             <div className="phone-top-tabs"><span>关注</span><strong>推荐</strong><span>朋友</span></div>
-            <div className="phone-card-anchor">
-              <div className="phone-card-position" data-position-x={phonePositionX} data-position-y={phonePositionY} style={phonePositionStyle}>
-                <div className="phone-card-scale" style={{ transform: "scale(" + previewScale + ")" }}>
+            <div className="phone-photo-window" style={{ height: sourceHeight + "px" }}>
+              <div className="phone-preview-source" style={sourceStyle}>
+                <img className="poster-background" src={background} crossOrigin="anonymous" onLoad={onBackgroundLoad} onError={onBackgroundError} alt="" />
+                <div className="poster-overlay" style={{ background: "rgba(0,0," + (overlay / 100) + ")" }} />
+                <div className={"poster-card-wrap wrap-" + orientation} data-position-x={phonePositionX} data-position-y={phonePositionY} style={sourceCardStyle}>
                   <TweetCard
-                text={feedText}
-                fontSize={compactFontSize}
-                metrics={metrics}
-                cardTheme={cardTheme}
-                profile={profile}
-                  className="phone-tweet-card"
+                    text={normalizedText}
+                    fontSize={fontSize}
+                    metrics={metrics}
+                    cardTheme={cardTheme}
+                    orientation={orientation}
+                    profile={profile}
+                    opacity={opacity}
+                    poster
                   />
                 </div>
               </div>
             </div>
             <div className="phone-feed-author"><strong>{profile.name}</strong><span>{profile.handle}</span></div>
-            <div className="phone-feed-caption">{captionText}{feedText.length > 88 ? "…" : ""}</div>
+            <div className="phone-feed-caption">{captionText}{normalizedText.length > 88 ? "…" : ""}</div>
             <div className="phone-feed-audio">♪ 原声 · AI马过河</div>
             <div className="phone-action-rail" aria-hidden="true">
               <span><Heart weight="fill" /><b>{formatMetric(metrics.likes)}</b></span>
@@ -818,6 +862,9 @@ export function App() {
           cardScale={cardScale * posterFitScale}
           cardPosition={cardPosition}
           cardRotation={cardRotation}
+          orientation={orientation}
+          opacity={cardOpacity}
+          canvasRef={exportRef}
           onBackgroundLoad={handleBackgroundLoad}
           onBackgroundError={handleBackgroundError}
         />
