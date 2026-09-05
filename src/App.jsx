@@ -133,6 +133,23 @@ function clampCardScale(value, fallback = 0.9) {
   return Math.max(0.45, Math.min(1.4, parsed));
 }
 
+const MIN_FONT_SIZE = 14;
+const MAX_FONT_SIZE = 23;
+
+function clampFontSize(value, fallback = 18) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, parsed));
+}
+
+// Keep the manual font slider responsive for long text while reserving a small
+// readability adjustment, matching the reference studio's natural-height card.
+function getAdaptivePosterFontSize(text, preferred) {
+  const length = String(text || "").replace(/\\s+/g, "").length;
+  const reduction = length > 900 ? 6 : length > 650 ? 5 : length > 420 ? 3 : length > 260 ? 1 : 0;
+  return Math.max(12, clampFontSize(preferred) - reduction);
+}
+
 function cleanSentence(value) {
   return value.replace(/https?:\/\/\S+/g, "").split(/[。！？\n]/).map((item) => item.trim()).find((item) => item.length >= 8 && item.length <= 52);
 }
@@ -516,7 +533,7 @@ export function App() {
   }), [profileAvatar, profileName, profileHandle, publishDate]);
   const activeText = mode === "history" ? selected.text : mode === "sources" ? sourceDraft : draft;
   const adaptiveCardFontSize = getAdaptiveFontSize(activeText, fontSize, false);
-  const adaptivePosterFontSize = Math.max(11, getAdaptiveFontSize(activeText, fontSize + 1, true));
+  const adaptivePosterFontSize = getAdaptivePosterFontSize(activeText, fontSize);
   const posterFitScale = activeText.length > 900 ? 0.62 : activeText.length > 700 ? 0.7 : activeText.length > 520 ? 0.78 : activeText.length > 360 ? 0.86 : 1;
   const sourceCategories = ["全部", ...new Set(contentSources.map((source) => source.category))];
   const sourceCategoryCounts = useMemo(() => contentSources.reduce((counts, source) => {
@@ -839,7 +856,7 @@ export function App() {
             <div className="drag-help"><span>拖动卡片调整位置 · 双指缩放</span><div><button type="button" onClick={resetCardPlacement}>居中重置</button></div></div>
           </div>
         </section>}
-        <section className="panel-section visual-section"><div className="section-heading compact"><span className="step-number">{finishStep}</span><div><h2>检查并下载</h2><p>右侧看到的就是最终图片</p></div></div><div className="profile-editor"><div className="profile-avatar-editor"><img src={profileAvatar} alt="当前头像" /><label><UploadSimple /> 自定义头像<input type="file" accept="image/*" onChange={loadProfileAvatar} /></label></div><div className="profile-fields"><label><span>显示名称</span><input value={profileName} maxLength={30} onChange={(event) => setProfileName(event.target.value)} /></label><label><span>用户名</span><input value={profileHandle} maxLength={32} onChange={(event) => setProfileHandle(event.target.value)} placeholder="@username" /></label><label><span>发布日期</span><input type="date" value={publishDate} onChange={(event) => setPublishDate(event.target.value)} /></label></div></div><div className="card-theme-control"><span>卡片背景</span><div className="card-theme-picker" role="group" aria-label="选择卡片背景"><button type="button" className={cardTheme === "light" ? "active" : ""} onClick={() => setCardTheme("light")}><i className="theme-swatch light" />白色</button><button type="button" className={cardTheme === "dark" ? "active" : ""} onClick={() => setCardTheme("dark")}><i className="theme-swatch dark" />黑色</button></div></div><label className="range-label"><span>正文字号 <b>{fontSize}px</b>{adaptiveCardFontSize < fontSize && <em>长文自动适配为 {adaptiveCardFontSize}px</em>}</span><input type="range" min="13" max="22" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))} /></label><button className="direct-export-button" onClick={exportDirectCard} disabled={exporting}><BookmarkSimple weight="fill" /><span><strong>{isMobile ? "保存纯推文卡片到相册" : "直接导出纯推文卡片"}</strong><small>没有海报背景，尺寸随正文自动增高</small></span></button>{outputMode === "poster" && activeText.length > 700 && <div className="length-warning"><WarningCircle weight="fill" /><span>这条内容很长，系统已经自动缩小卡片。纯卡片导出不会截断，抖音竖图建议适当精简。</span></div>}</section>
+        <section className="panel-section visual-section"><div className="section-heading compact"><span className="step-number">{finishStep}</span><div><h2>检查并下载</h2><p>右侧看到的就是最终图片</p></div></div><div className="profile-editor"><div className="profile-avatar-editor"><img src={profileAvatar} alt="当前头像" /><label><UploadSimple /> 自定义头像<input type="file" accept="image/*" onChange={loadProfileAvatar} /></label></div><div className="profile-fields"><label><span>显示名称</span><input value={profileName} maxLength={30} onChange={(event) => setProfileName(event.target.value)} /></label><label><span>用户名</span><input value={profileHandle} maxLength={32} onChange={(event) => setProfileHandle(event.target.value)} placeholder="@username" /></label><label><span>发布日期</span><input type="date" value={publishDate} onChange={(event) => setPublishDate(event.target.value)} /></label></div></div><div className="card-theme-control"><span>卡片背景</span><div className="card-theme-picker" role="group" aria-label="选择卡片背景"><button type="button" className={cardTheme === "light" ? "active" : ""} onClick={() => setCardTheme("light")}><i className="theme-swatch light" />白色</button><button type="button" className={cardTheme === "dark" ? "active" : ""} onClick={() => setCardTheme("dark")}><i className="theme-swatch dark" />黑色</button></div></div><label className="range-label"><span>正文字号 <b>{fontSize}px</b>{adaptiveCardFontSize < fontSize && <em>长文自动适配为 {adaptiveCardFontSize}px</em>}</span><input type="range" min={MIN_FONT_SIZE} max={MAX_FONT_SIZE} step="1" value={fontSize} onChange={(event) => setFontSize(clampFontSize(Number(event.target.value)))} aria-label={"正文字号 " + fontSize + "px"} /></label><button className="direct-export-button" onClick={exportDirectCard} disabled={exporting}><BookmarkSimple weight="fill" /><span><strong>{isMobile ? "保存纯推文卡片到相册" : "直接导出纯推文卡片"}</strong><small>没有海报背景，尺寸随正文自动增高</small></span></button>{outputMode === "poster" && activeText.length > 700 && <div className="length-warning"><WarningCircle weight="fill" /><span>这条内容很长，系统已经自动缩小卡片。纯卡片导出不会截断，抖音竖图建议适当精简。</span></div>}</section>
         <section className="panel-section publish-copy-section">
           <div className="section-heading compact"><span className="step-number">{String(Number(finishStep) + 1).padStart(2, "0")}</span><div><h2>准备发布文案和话题</h2><p>自动生成一句文案 + 3～5 个相关标签 · 内置 {allCaptions.length} 条离线文案</p></div></div>
           {publishCopy ? <div className="publish-copy-result">{publishCopy}</div> : <div className="publish-copy-empty">点击下方按钮，根据当前推文自动生成。</div>}
