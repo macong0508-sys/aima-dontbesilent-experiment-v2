@@ -495,7 +495,7 @@ export function App() {
   const [copyStatus, setCopyStatus] = useState("");
   const [profileAvatar, setProfileAvatar] = useState(defaultAvatar);
   const [profileName, setProfileName] = useState("AI马过河");
-  const [profileHandle, setProfileHandle] = useState("aimaguohe");
+  const [profileHandle, setProfileHandle] = useState("AImaguohe");
   const [publishDate, setPublishDate] = useState(() => new Date().toISOString().slice(0, 10));
   const exportRef = useRef(null);
   const posterExportRef = useRef(null);
