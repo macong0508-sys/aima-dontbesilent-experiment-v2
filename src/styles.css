@@ -1751,17 +1751,29 @@ a:focus-visible {
 }
 
 
-/* Phone position sync: mirror the poster's logical drag coordinates inside the feed screen. */
+/* Phone position sync: use the phone screen as the clipping viewport and
+   map the poster's 720x960 coordinates responsively through inline left/top. */
 .phone-card-anchor {
-  bottom: 45px;
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: visible;
   max-height: none;
-  align-items: flex-start;
 }
 
 .phone-card-position {
+  position: absolute;
+  top: 43px;
+  left: 50%;
+  width: calc(100% - 24px);
+  display: block;
+  transform-origin: center top;
+  will-change: transform, top, left;
+}
+
+.phone-card-scale {
   width: 100%;
-  display: flex;
-  justify-content: center;
+  display: block;
   transform-origin: center top;
   will-change: transform;
 }
