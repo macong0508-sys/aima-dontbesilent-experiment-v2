@@ -947,7 +947,7 @@ a:focus-visible {
 .poster-card-wrap.wrap-portrait { width: 500px; }
 .poster-card-wrap.wrap-landscape { width: 640px; }
 .poster-card-wrap:active { cursor: grabbing; }
-.poster-tweet-card {
+.tweet-card.poster-tweet-card {
   width: 100%;
   min-height: 0;
   border-radius: 4px;
