@@ -323,10 +323,29 @@ async function createStableExportClone(node) {
   }
 }
 
-function formatLongDate(value) {
+function clampPublishHour(value, fallback = 12) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(1, Math.min(12, Math.round(parsed)));
+}
+
+function clampPublishMinute(value, fallback = 46) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(0, Math.min(59, Math.round(parsed)));
+}
+
+function formatPublishTime(period = "下午", hour = 12, minute = 46) {
+  const safePeriod = period === "上午" ? "上午" : "下午";
+  const safeHour = clampPublishHour(hour);
+  const safeMinute = clampPublishMinute(minute);
+  return `${safePeriod}${safeHour}:${String(safeMinute).padStart(2, "0")}`;
+}
+
+function formatLongDate(value, period = "下午", hour = 12, minute = 46) {
   const date = new Date(`${value}T00:00:00+08:00`);
   if (Number.isNaN(date.getTime())) return String(value || "");
-  return `下午12:46 · ${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+  return `${formatPublishTime(period, hour, minute)} · ${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
 function XLogo() {
@@ -353,7 +372,7 @@ function TweetCard({ cardRef, text, fontSize, metrics, cardTheme, orientation = 
     <div className="tweet-body" style={{ fontSize: `${fontSize}px` }}>
       {bodyParagraphs.length ? bodyParagraphs.map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 12)}`}>{paragraph}</p>) : <p>暂无正文</p>}
     </div>
-    <div className="tweet-meta-row"><span>{formatLongDate(profile.date)}</span><span>·</span><strong>{formatMetric(metrics.views)} 查看</strong></div>
+    <div className="tweet-meta-row"><span>{formatLongDate(profile.date, profile.period, profile.hour, profile.minute)}</span><span>·</span><strong>{formatMetric(metrics.views)} 查看</strong></div>
     <footer className="tweet-metrics">
       <span><ChatCircle /><em>{formatMetric(metrics.replies)}</em></span>
       <span><Repeat /><em>{formatMetric(metrics.reposts)}</em></span>
@@ -514,6 +533,9 @@ export function App() {
   const [profileName, setProfileName] = useState("AI马过河");
   const [profileHandle, setProfileHandle] = useState("AImaguohe");
   const [publishDate, setPublishDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [publishPeriod, setPublishPeriod] = useState("下午");
+  const [publishHour, setPublishHour] = useState(12);
+  const [publishMinute, setPublishMinute] = useState(46);
   const exportRef = useRef(null);
   const posterExportRef = useRef(null);
   const directCardRef = useRef(null);
@@ -530,7 +552,10 @@ export function App() {
     name: profileName.trim() || "未命名",
     handle: `@${profileHandle.trim().replace(/^@+/, "") || "username"}`,
     date: publishDate || new Date().toISOString().slice(0, 10),
-  }), [profileAvatar, profileName, profileHandle, publishDate]);
+    period: publishPeriod,
+    hour: publishHour,
+    minute: publishMinute,
+  }), [profileAvatar, profileName, profileHandle, publishDate, publishPeriod, publishHour, publishMinute]);
   const activeText = mode === "history" ? selected.text : mode === "sources" ? sourceDraft : draft;
   const adaptiveCardFontSize = getAdaptiveFontSize(activeText, fontSize, false);
   const adaptivePosterFontSize = getAdaptivePosterFontSize(activeText, fontSize);
@@ -856,7 +881,18 @@ export function App() {
             <div className="drag-help"><span>拖动卡片调整位置 · 双指缩放</span><div><button type="button" onClick={resetCardPlacement}>居中重置</button></div></div>
           </div>
         </section>}
-        <section className="panel-section visual-section"><div className="section-heading compact"><span className="step-number">{finishStep}</span><div><h2>检查并下载</h2><p>右侧看到的就是最终图片</p></div></div><div className="profile-editor"><div className="profile-avatar-editor"><img src={profileAvatar} alt="当前头像" /><label><UploadSimple /> 自定义头像<input type="file" accept="image/*" onChange={loadProfileAvatar} /></label></div><div className="profile-fields"><label><span>显示名称</span><input value={profileName} maxLength={30} onChange={(event) => setProfileName(event.target.value)} /></label><label><span>用户名</span><input value={profileHandle} maxLength={32} onChange={(event) => setProfileHandle(event.target.value)} placeholder="@username" /></label><label><span>发布日期</span><input type="date" value={publishDate} onChange={(event) => setPublishDate(event.target.value)} /></label></div></div><div className="card-theme-control"><span>卡片背景</span><div className="card-theme-picker" role="group" aria-label="选择卡片背景"><button type="button" className={cardTheme === "light" ? "active" : ""} onClick={() => setCardTheme("light")}><i className="theme-swatch light" />白色</button><button type="button" className={cardTheme === "dark" ? "active" : ""} onClick={() => setCardTheme("dark")}><i className="theme-swatch dark" />黑色</button></div></div><label className="range-label"><span>正文字号 <b>{fontSize}px</b>{adaptiveCardFontSize < fontSize && <em>长文自动适配为 {adaptiveCardFontSize}px</em>}</span><input type="range" min={MIN_FONT_SIZE} max={MAX_FONT_SIZE} step="1" value={fontSize} onChange={(event) => setFontSize(clampFontSize(Number(event.target.value)))} aria-label={"正文字号 " + fontSize + "px"} /></label><button className="direct-export-button" onClick={exportDirectCard} disabled={exporting}><BookmarkSimple weight="fill" /><span><strong>{isMobile ? "保存纯推文卡片到相册" : "直接导出纯推文卡片"}</strong><small>没有海报背景，尺寸随正文自动增高</small></span></button>{outputMode === "poster" && activeText.length > 700 && <div className="length-warning"><WarningCircle weight="fill" /><span>这条内容很长，系统已经自动缩小卡片。纯卡片导出不会截断，抖音竖图建议适当精简。</span></div>}</section>
+        <section className="panel-section visual-section"><div className="section-heading compact"><span className="step-number">{finishStep}</span><div><h2>检查并下载</h2><p>右侧看到的就是最终图片</p></div></div><div className="profile-editor"><div className="profile-avatar-editor"><img src={profileAvatar} alt="当前头像" /><label><UploadSimple /> 自定义头像<input type="file" accept="image/*" onChange={loadProfileAvatar} /></label></div><div className="profile-fields">
+          <label><span>显示名称</span><input value={profileName} maxLength={30} onChange={(event) => setProfileName(event.target.value)} /></label>
+          <label><span>用户名</span><input value={profileHandle} maxLength={32} onChange={(event) => setProfileHandle(event.target.value)} placeholder="@username" /></label>
+          <div className="profile-date-time">
+            <label><span>发布日期</span><input type="date" value={publishDate} onChange={(event) => setPublishDate(event.target.value)} /></label>
+            <div className="profile-time-fields">
+              <label><span>上午下午</span><select value={publishPeriod} onChange={(event) => setPublishPeriod(event.target.value === "上午" ? "上午" : "下午")} aria-label="上午下午"><option value="上午">上午</option><option value="下午">下午</option></select></label>
+              <label><span>小时</span><input type="number" min="1" max="12" step="1" value={publishHour} onChange={(event) => setPublishHour(clampPublishHour(event.target.value))} aria-label="小时" /></label>
+              <label><span>分钟</span><input type="number" min="0" max="59" step="1" value={publishMinute} onChange={(event) => setPublishMinute(clampPublishMinute(event.target.value))} aria-label="分钟" /></label>
+            </div>
+          </div>
+        </div></div><div className="card-theme-control"><span>卡片背景</span><div className="card-theme-picker" role="group" aria-label="选择卡片背景"><button type="button" className={cardTheme === "light" ? "active" : ""} onClick={() => setCardTheme("light")}><i className="theme-swatch light" />白色</button><button type="button" className={cardTheme === "dark" ? "active" : ""} onClick={() => setCardTheme("dark")}><i className="theme-swatch dark" />黑色</button></div></div><label className="range-label"><span>正文字号 <b>{fontSize}px</b>{adaptiveCardFontSize < fontSize && <em>长文自动适配为 {adaptiveCardFontSize}px</em>}</span><input type="range" min={MIN_FONT_SIZE} max={MAX_FONT_SIZE} step="1" value={fontSize} onChange={(event) => setFontSize(clampFontSize(Number(event.target.value)))} aria-label={"正文字号 " + fontSize + "px"} /></label><button className="direct-export-button" onClick={exportDirectCard} disabled={exporting}><BookmarkSimple weight="fill" /><span><strong>{isMobile ? "保存纯推文卡片到相册" : "直接导出纯推文卡片"}</strong><small>没有海报背景，尺寸随正文自动增高</small></span></button>{outputMode === "poster" && activeText.length > 700 && <div className="length-warning"><WarningCircle weight="fill" /><span>这条内容很长，系统已经自动缩小卡片。纯卡片导出不会截断，抖音竖图建议适当精简。</span></div>}</section>
         <section className="panel-section publish-copy-section">
           <div className="section-heading compact"><span className="step-number">{String(Number(finishStep) + 1).padStart(2, "0")}</span><div><h2>准备发布文案和话题</h2><p>自动生成一句文案 + 3～5 个相关标签 · 内置 {allCaptions.length} 条离线文案</p></div></div>
           {publishCopy ? <div className="publish-copy-result">{publishCopy}</div> : <div className="publish-copy-empty">点击下方按钮，根据当前推文自动生成。</div>}
