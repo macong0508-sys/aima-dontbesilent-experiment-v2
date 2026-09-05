@@ -416,12 +416,12 @@ function PhonePreview({ text, fontSize, metrics, cardTheme, profile, background,
           <div className="phone-speaker" />
           <div className="phone-screen" ref={phoneScreenRef}>
             <img className="phone-background" src={background} crossOrigin="anonymous" onLoad={onBackgroundLoad} onError={onBackgroundError} alt="" />
-            <div className="phone-background-dim" style={{ background: "rgba(0,0," + (overlay / 100) + ")" }} />
+            <div className="phone-background-dim" style={{ background: "rgba(0,0,0," + (overlay / 100) + ")" }} />
             <div className="phone-top-tabs"><span>关注</span><strong>推荐</strong><span>朋友</span></div>
             <div className="phone-photo-window" style={{ height: sourceHeight + "px" }}>
               <div className="phone-preview-source" style={sourceStyle}>
                 <img className="poster-background" src={background} crossOrigin="anonymous" onLoad={onBackgroundLoad} onError={onBackgroundError} alt="" />
-                <div className="poster-overlay" style={{ background: "rgba(0,0," + (overlay / 100) + ")" }} />
+                <div className="poster-overlay" style={{ background: "rgba(0,0,0," + (overlay / 100) + ")" }} />
                 <div className={"poster-card-wrap wrap-" + orientation} data-position-x={phonePositionX} data-position-y={phonePositionY} style={sourceCardStyle}>
                   <TweetCard
                     text={normalizedText}
