@@ -1896,3 +1896,47 @@ a:focus-visible {
     grid-column: 1 / -1;
   }
 }
+
+
+/* Mirror the complete editable poster into the phone feed.  The phone screen
+   clips the scaled canvas, so its card uses exactly the same coordinates,
+   typography, rotation, and scale as the poster above. */
+.phone-photo-window {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  transform: translateY(-50%);
+}
+
+.phone-preview-source {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  transform-origin: 0 0;
+}
+
+.phone-preview-source .poster-card-wrap {
+  max-width: calc(100% - 24px);
+}
+
+.phone-preview-source .poster-card-wrap.wrap-portrait {
+  width: min(500px, calc(100% - 72px));
+}
+
+.phone-preview-source .poster-card-wrap.wrap-landscape {
+  width: min(640px, calc(100% - 36px));
+}
+
+@media (max-width: 860px) {
+  .phone-preview-source .poster-card-wrap.wrap-portrait {
+    width: min(500px, calc(100% - 64px));
+  }
+
+  .phone-preview-source .poster-card-wrap.wrap-landscape {
+    width: min(640px, calc(100% - 28px));
+  }
+}
